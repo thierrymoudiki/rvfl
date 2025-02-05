@@ -3,7 +3,7 @@ ridgemodel <- function(X, y, workhorse=stats::lm, lambda=10**seq(-10, 10, length
                        type_residuals=c("gaussian", "calibrated"), seed=123, ...) {
   set.seed(seed)  
   n_train <- floor(0.5 * nrow(X))
-  y_mean <- mean(y)
+  y_mean <- mean(y)  
   X_mean <- colMeans(X)
   X_sd <- apply(X, 2, sd)
   X_scaled <- scale(X, center=X_mean, scale=X_sd)
@@ -14,14 +14,14 @@ ridgemodel <- function(X, y, workhorse=stats::lm, lambda=10**seq(-10, 10, length
   }
   sqrt_lambda <- sqrt(lambda)
   Z <- rbind(X_scaled, diag(sqrt_lambda, p, p))
-  y_aug <- c(y, rep(0, p))
+  y_aug <- c(y, rep(0, p))  
   # Create data frame with augmented data
   df <- data.frame(y = y_aug, as.data.frame(Z))
   type_residuals <- match.arg(type_residuals)        
   
   if (type_residuals == "gaussian") {        
     # Original code for other workhorse functions 
-    model <- try(workhorse(y ~ . -1, data=df, ...), silent=TRUE)
+    model <- try(workhorse(y ~ . -1, data=df, ...), silent=FALSE)
     if (inherits(model, "try-error")) {
       model <- workhorse(X = as.matrix(X), y = y, ...)
     }
@@ -37,10 +37,12 @@ ridgemodel <- function(X, y, workhorse=stats::lm, lambda=10**seq(-10, 10, length
     X_calib <- X_scaled[-train_idx,]
     y_calib <- y[-train_idx]                
     # Fit model on training data with augmented matrices
-    Z_train <- rbind(X_train, diag(sqrt_lambda, p, p))
-    Z_calib <- rbind(X_calib, diag(sqrt_lambda, p, p))
-    y_train_aug <- c(y_train, rep(0, p))
-    y_calib_aug <- c(y_calib, rep(0, p))        
+    diag_sqrt_lambda <- diag(sqrt_lambda, p, p)
+    Z_train <- rbind(X_train, diag_sqrt_lambda)
+    Z_calib <- rbind(X_calib, diag_sqrt_lambda)
+    rep_0_p <- rep(0, p)
+    y_train_aug <- c(y_train, rep_0_p)
+    y_calib_aug <- c(y_calib, rep_0_p)        
     df_train <- data.frame(y=y_train_aug, as.data.frame(Z_train))
     df_calib <- data.frame(y=y_calib_aug, as.data.frame(Z_calib))
     model <- workhorse(y ~ . -1, data=df_train, ...)        

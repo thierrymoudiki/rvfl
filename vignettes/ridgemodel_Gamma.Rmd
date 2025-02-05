@@ -1,0 +1,355 @@
+---
+title: "Ridge Gamma model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ridge Gamma model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+library(rvfl)
+```
+
+```{r}
+glmGamma <- function(formula, ...) {
+  stats::glm(formula = formula, 
+             family = "gaussian",
+             #family = inverse.gaussian(link = "1/mu^2"),
+             #family = Gamma(link = "log"),
+             #control = glm.control(maxit = 100, epsilon = 1e-8),
+             ...)
+}
+```
+
+# Example 1: MPG Prediction (mtcars dataset)
+
+## Load and prepare data
+```{r}
+data(mtcars)
+
+set.seed(1243)
+train_idx <- sample(nrow(mtcars), size = floor(0.8 * nrow(mtcars)))
+train_data <- mtcars[train_idx, ]
+test_data <- mtcars[-train_idx, -1]
+```
+
+
+## Fit models
+```{r}
+# Fit regular linear model
+start <- proc.time()[3]
+lm_model <- lm(mpg ~ ., data = train_data)
+print(proc.time()[3] - start)
+print(summary(lm_model))
+print(confint(lm_model))
+
+# Fit calibrated model 
+start <- proc.time()[3]
+ridge_model <- rvfl::ridgemodel(type_residuals="calibrated", X = as.matrix(train_data[,-1]), y = train_data$mpg, workhorse = glmGamma)
+print(proc.time()[3] - start)
+print(summary(ridge_model))
+print(confint(ridge_model))
+#print(simulate(ridge_model, newdata = test_data))
+```
+
+## Make predictions
+```{r eval=TRUE}
+lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), interval = "prediction")
+```
+
+## Compare predictions
+```{r eval=TRUE, fig.width=7.5}
+results <- data.frame(
+  Actual = mtcars[-train_idx, ]$mpg,
+  LM_Pred = lm_pred[,"fit"],
+  LM_Lower = lm_pred[,"lwr"],
+  LM_Upper = lm_pred[,"upr"],
+  Ridge_Pred = ridge_pred[,"fit"],
+  Ridge_Lower = ridge_pred[,"lwr"], 
+  Ridge_Upper = ridge_pred[,"upr"]
+)
+
+# Print results
+print("Prediction Intervals Comparison:")
+print(head(results))
+
+# Calculate coverage and Winkler scores
+lm_coverage <- mean(mtcars[-train_idx, ]$mpg >= results$LM_Lower & 
+                   mtcars[-train_idx, ]$mpg <= results$LM_Upper)
+ridge_coverage <- mean(mtcars[-train_idx, ]$mpg >= results$Ridge_Lower & 
+                      mtcars[-train_idx, ]$mpg <= results$Ridge_Upper)
+
+lm_winkler <- misc::winkler_score(mtcars[-train_idx, ]$mpg, results$LM_Lower, results$LM_Upper)
+ridge_winkler <- misc::winkler_score(mtcars[-train_idx, ]$mpg, results$Ridge_Lower, results$Ridge_Upper)
+
+print(sprintf("\nPrediction interval metrics:"))
+print(sprintf("Linear Model: %.1f%% coverage, %.3f Winkler score", 
+              100 * lm_coverage, mean(lm_winkler)))
+print(sprintf("Calibrated Model: %.1f%% coverage, %.3f Winkler score", 
+              100 * ridge_coverage, mean(ridge_winkler)))
+
+# Set common y-axis limits for both plots
+y_limits <- range(c(results$LM_Lower, results$LM_Upper,
+                   results$Ridge_Lower, results$Ridge_Upper))
+
+# Plot prediction intervals
+par(mfrow=c(1,2))
+
+# Linear Model Plot
+plot(results$Actual, results$LM_Pred, 
+     main="Linear Model Predictions",
+     xlab="Actual MPG", ylab="Predicted MPG",
+     ylim=y_limits)
+# Add shaded prediction intervals
+x_ordered <- order(results$Actual)
+polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
+        c(results$LM_Lower[x_ordered], rev(results$LM_Upper[x_ordered])),
+        col=rgb(0, 0, 1, 0.2), border=NA)
+points(results$Actual, results$LM_Pred)  # Replot points over shading
+abline(0, 1, col="red", lty=2)  # Add diagonal line
+
+# Ridge Model Plot
+plot(results$Actual, results$Ridge_Pred,
+     main="Ridge Model Predictions",
+     xlab="Actual MPG", ylab="Predicted MPG",
+     ylim=y_limits)
+# Add shaded prediction intervals
+polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
+        c(results$Ridge_Lower[x_ordered], rev(results$Ridge_Upper[x_ordered])),
+        col=rgb(0, 0, 1, 0.2), border=NA)
+points(results$Actual, results$Ridge_Pred)  # Replot points over shading
+abline(0, 1, col="red", lty=2)  # Add diagonal line
+
+# Add simulation plot
+par(mfrow=c(1,1))
+# Generate 100 simulations
+sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+# Plot simulations
+matplot(sims, type = "l", 
+        col = rgb(0, 0, 1, 0.1), lty = 1,
+        xlab = "obs. #", ylab = "Simulated MPG",
+        main = "Ridge Model Simulations")
+lines(mtcars[-train_idx, ]$mpg, col = "red")        
+```
+
+# Example 2: Boston Housing Price Prediction
+
+## Load and prepare data
+```{r}
+library(MASS)
+data(Boston)
+
+set.seed(1243)
+train_idx <- sample(nrow(Boston), size = floor(0.8 * nrow(Boston)))
+train_data <- Boston[train_idx, ]
+test_data <- Boston[-train_idx, -14]  # -14 removes 'medv' (target variable)
+```
+
+## Fit models
+```{r}
+# Fit regular linear model
+start <- proc.time()[3]
+lm_model <- lm(medv ~ ., data = train_data)
+print(proc.time()[3] - start)
+print(summary(lm_model))
+print(confint(lm_model))
+
+# Fit calibrated model 
+start <- proc.time()[3]
+ridge_model <- rvfl::ridgemodel(type_residuals="calibrated", X = as.matrix(train_data[,-14]), y = train_data$medv, workhorse = glmGamma)
+print(proc.time()[3] - start)
+print(summary(ridge_model))
+print(confint(ridge_model))
+#print(simulate(ridge_model, newdata = test_data))
+```
+
+## Make predictions and compare
+```{r eval=TRUE, fig.width=7.5}
+lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), interval = "prediction")
+
+results <- data.frame(
+  Actual = Boston[-train_idx, ]$medv,
+  LM_Pred = lm_pred[,"fit"],
+  LM_Lower = lm_pred[,"lwr"],
+  LM_Upper = lm_pred[,"upr"],
+  Ridge_Pred = ridge_pred[,"fit"],
+  Ridge_Lower = ridge_pred[,"lwr"], 
+  Ridge_Upper = ridge_pred[,"upr"]
+)
+
+# Print results
+print("Prediction Intervals Comparison:")
+print(head(results))
+
+# Calculate coverage and Winkler scores
+lm_coverage <- mean(Boston[-train_idx, ]$medv >= results$LM_Lower & 
+                   Boston[-train_idx, ]$medv <= results$LM_Upper)
+ridge_coverage <- mean(Boston[-train_idx, ]$medv >= results$Ridge_Lower & 
+                      Boston[-train_idx, ]$medv <= results$Ridge_Upper)
+
+lm_winkler <- misc::winkler_score(Boston[-train_idx, ]$medv, results$LM_Lower, results$LM_Upper)
+ridge_winkler <- misc::winkler_score(Boston[-train_idx, ]$medv, results$Ridge_Lower, results$Ridge_Upper)
+
+print(sprintf("\nPrediction interval metrics:"))
+print(sprintf("Linear Model: %.1f%% coverage, %.3f Winkler score", 
+              100 * lm_coverage, mean(lm_winkler)))
+print(sprintf("Calibrated Model: %.1f%% coverage, %.3f Winkler score", 
+              100 * ridge_coverage, mean(ridge_winkler)))
+
+# Visualization
+# Set common y-axis limits for both plots
+y_limits <- range(c(results$LM_Lower, results$LM_Upper,
+                   results$Ridge_Lower, results$Ridge_Upper))
+
+par(mfrow=c(1,2))
+
+# Linear Model Plot
+plot(results$Actual, results$LM_Pred, 
+     main="Linear Model Predictions",
+     xlab="Actual Median Value", ylab="Predicted Median Value",
+     ylim=y_limits)
+x_ordered <- order(results$Actual)
+polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
+        c(results$LM_Lower[x_ordered], rev(results$LM_Upper[x_ordered])),
+        col=rgb(0, 0, 1, 0.2), border=NA)
+points(results$Actual, results$LM_Pred)
+abline(0, 1, col="red", lty=2)
+
+# Ridge Model Plot
+plot(results$Actual, results$Ridge_Pred,
+     main="Ridge Model Predictions",
+     xlab="Actual Median Value", ylab="Predicted Median Value",
+     ylim=y_limits)
+polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
+        c(results$Ridge_Lower[x_ordered], rev(results$Ridge_Upper[x_ordered])),
+        col=rgb(0, 0, 1, 0.2), border=NA)
+points(results$Actual, results$Ridge_Pred)
+abline(0, 1, col="red", lty=2)
+
+# Add simulation plot
+par(mfrow=c(1,1))
+sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+matplot(sims, type = "l", 
+        col = rgb(0, 0, 1, 0.1), lty = 1,
+        xlab = "obs. #", ylab = "Simulated Median Value",
+        main = "Ridge Model Simulations")
+lines(Boston[-train_idx, ]$medv, col = "red")
+```
+
+# Example 3: Car Price Analysis (Cars93 dataset)
+
+## Load and prepare data
+```{r}
+data(Cars93, package = "MASS")
+
+# Remove rows with missing values
+Cars93 <- na.omit(Cars93)
+
+# Select numeric predictors and price as response
+predictors <- c("MPG.city", "MPG.highway", "EngineSize", "Horsepower", 
+                "RPM", "Rev.per.mile", "Fuel.tank.capacity", "Length", 
+                "Wheelbase", "Width", "Turn.circle", "Weight")
+car_data <- Cars93[, c(predictors, "Price")]
+
+set.seed(1243)
+train_idx <- sample(nrow(car_data), size = floor(0.8 * nrow(car_data)))
+train_data <- car_data[train_idx, ]
+test_data <- car_data[-train_idx, -which(names(car_data) == "Price")]
+```
+
+## Fit models
+```{r}
+# Fit regular linear model
+start <- proc.time()[3]
+lm_model <- lm(Price ~ ., data = train_data)
+print(proc.time()[3] - start)
+print(summary(lm_model))
+print(confint(lm_model))
+
+# Fit calibrated model 
+start <- proc.time()[3]
+ridge_model <- rvfl::ridgemodel(type_residuals="calibrated", X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
+                               y = train_data$Price, workhorse = glmGamma)
+print(proc.time()[3] - start)
+print(summary(ridge_model))
+print(confint(ridge_model))
+#print(simulate(ridge_model, newdata = as.matrix(test_data)))
+```
+
+## Make predictions and compare
+```{r eval=TRUE, fig.width=7.5}
+lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), interval = "prediction")
+
+results <- data.frame(
+  Actual = car_data[-train_idx, "Price"],
+  LM_Pred = lm_pred[,"fit"],
+  LM_Lower = lm_pred[,"lwr"],
+  LM_Upper = lm_pred[,"upr"],
+  Ridge_Pred = ridge_pred[,"fit"],
+  Ridge_Lower = ridge_pred[,"lwr"], 
+  Ridge_Upper = ridge_pred[,"upr"]
+)
+
+# Print results
+print("Prediction Intervals Comparison:")
+print(results)
+
+# Calculate coverage and Winkler scores
+lm_coverage <- mean(car_data[-train_idx, "Price"] >= results$LM_Lower & 
+                   car_data[-train_idx, "Price"] <= results$LM_Upper)
+ridge_coverage <- mean(car_data[-train_idx, "Price"] >= results$Ridge_Lower & 
+                      car_data[-train_idx, "Price"] <= results$Ridge_Upper)
+
+lm_winkler <- misc::winkler_score(car_data[-train_idx, "Price"], results$LM_Lower, results$LM_Upper)
+ridge_winkler <- misc::winkler_score(car_data[-train_idx, "Price"], results$Ridge_Lower, results$Ridge_Upper)
+
+print(sprintf("\nPrediction interval metrics:"))
+print(sprintf("Linear Model: %.1f%% coverage, %.3f Winkler score", 
+              100 * lm_coverage, mean(lm_winkler)))
+print(sprintf("Calibrated Model: %.1f%% coverage, %.3f Winkler score", 
+              100 * ridge_coverage, mean(ridge_winkler)))
+
+# Visualization
+# Set common y-axis limits for both plots
+y_limits <- range(c(results$LM_Lower, results$LM_Upper,
+                   results$Ridge_Lower, results$Ridge_Upper))
+
+par(mfrow=c(1,2))
+
+# Linear Model Plot
+plot(results$Actual, results$LM_Pred, 
+     main="Linear Model Predictions",
+     xlab="Actual Price ($1000s)", ylab="Predicted Price ($1000s)",
+     ylim=y_limits)
+x_ordered <- order(results$Actual)
+polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
+        c(results$LM_Lower[x_ordered], rev(results$LM_Upper[x_ordered])),
+        col=rgb(0, 0, 1, 0.2), border=NA)
+points(results$Actual, results$LM_Pred)
+abline(0, 1, col="red", lty=2)
+
+# Ridge Model Plot
+plot(results$Actual, results$Ridge_Pred,
+     main="Ridge Model Predictions",
+     xlab="Actual Price ($1000s)", ylab="Predicted Price ($1000s)",
+     ylim=y_limits)
+polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
+        c(results$Ridge_Lower[x_ordered], rev(results$Ridge_Upper[x_ordered])),
+        col=rgb(0, 0, 1, 0.2), border=NA)
+points(results$Actual, results$Ridge_Pred)
+abline(0, 1, col="red", lty=2)
+
+# Add simulation plot
+par(mfrow=c(1,1))
+sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+matplot(sims, type = "l", 
+        col = rgb(0, 0, 1, 0.1), lty = 1,
+        xlab = "obs. #", ylab = "Simulated Price ($1000s)",
+        main = "Ridge Model Simulations")
+lines(car_data[-train_idx, "Price"], col = "red")
+```
+
