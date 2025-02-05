@@ -44,7 +44,7 @@ print(confint(ridge_model))
 ## Make predictions
 ```{r eval=TRUE}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap", interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
 ```
 
 ## Compare predictions
@@ -156,7 +156,7 @@ print(confint(ridge_model))
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap", interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
 
 results <- data.frame(
   Actual = Boston[-train_idx, ]$medv,
@@ -260,7 +260,7 @@ print(confint(ridge_model))
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap", interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
 
 results <- data.frame(
   Actual = longley[-train_idx, ]$Employed,
@@ -364,7 +364,7 @@ print(confint(ridge_model))
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap", interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
 
 results <- data.frame(
   Actual = UScrime[-train_idx, ]$y,
@@ -478,7 +478,7 @@ print(confint(ridge_model))
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap", interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
 
 results <- data.frame(
   Actual = car_data[-train_idx, "Price"],

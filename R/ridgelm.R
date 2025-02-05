@@ -1,6 +1,6 @@
 #' @export
 ridgemodel <- function(X, y, workhorse=stats::lm, lambda=10**seq(-10, 10, length.out=100), 
-                       type_residuals=c("gaussian", "calibrated"), seed=123, ...) {
+                       seed=123, ...) {
   set.seed(seed)  
   n_train <- floor(0.5 * nrow(X))
   y_mean <- mean(y)  
@@ -12,159 +12,148 @@ ridgemodel <- function(X, y, workhorse=stats::lm, lambda=10**seq(-10, 10, length
   if (length(lambda) > 1){
     lambda <- select_ridge_lambda(X_scaled, y, lambda)$lambda.min
   }
-  sqrt_lambda <- sqrt(lambda)
-  Z <- rbind(X_scaled, diag(sqrt_lambda, p, p))
-  y_aug <- c(y, rep(0, p))  
-  # Create data frame with augmented data
-  df <- data.frame(y = y_aug, as.data.frame(Z))
-  type_residuals <- match.arg(type_residuals)        
-  
-  if (type_residuals == "gaussian") {        
-    # Original code for other workhorse functions 
-    model <- try(workhorse(y ~ . -1, data=df, ...), silent=FALSE)
-    if (inherits(model, "try-error")) {
-      model <- workhorse(X = as.matrix(X), y = y, ...)
-    }
-    model$type_residuals <- "gaussian"
-  }
-  
-  if (type_residuals == "calibrated") {
-    # Obtain calibration residuals
-    # Split data into calibration and training sets
-    train_idx <- sample(nrow(X), size=n_train)
-    X_train <- X_scaled[train_idx,]
-    y_train <- y[train_idx]
-    X_calib <- X_scaled[-train_idx,]
-    y_calib <- y[-train_idx]                
-    # Fit model on training data with augmented matrices
-    diag_sqrt_lambda <- diag(sqrt_lambda, p, p)
-    Z_train <- rbind(X_train, diag_sqrt_lambda)
-    Z_calib <- rbind(X_calib, diag_sqrt_lambda)
-    rep_0_p <- rep(0, p)
-    y_train_aug <- c(y_train, rep_0_p)
-    y_calib_aug <- c(y_calib, rep_0_p)        
-    df_train <- data.frame(y=y_train_aug, as.data.frame(Z_train))
-    df_calib <- data.frame(y=y_calib_aug, as.data.frame(Z_calib))
-    model <- workhorse(y ~ . -1, data=df_train, ...)        
-    # Get calibration residuals
-    calib_pred <- predict(model, newdata=as.data.frame(X_calib))
-    calib_resid <- y_calib - calib_pred        
-    # Store calibration residuals
-    model <- workhorse(y ~ . -1, data=df_calib, ...)
-    model$residuals <- calib_resid
-    model$type_residuals <- "calibrated"
-  }
-  
+  sqrt_lambda <- sqrt(lambda)    
+  # Obtain calibration residuals
+  # Split data into calibration and training sets
+  train_idx <- sample(nrow(X), size=n_train)
+  X_train <- X_scaled[train_idx,]
+  y_train <- y[train_idx]
+  X_calib <- X_scaled[-train_idx,]
+  y_calib <- y[-train_idx]                
+  # Fit model on training data with augmented matrices
+  diag_sqrt_lambda <- diag(sqrt_lambda, p, p)
+  Z_train <- rbind(X_train, diag_sqrt_lambda)
+  Z_calib <- rbind(X_calib, diag_sqrt_lambda)
+  rep_0_p <- rep(0, p)
+  y_train_aug <- c(y_train, rep_0_p)
+  y_calib_aug <- c(y_calib, rep_0_p)        
+  df_train <- data.frame(y=y_train_aug, as.data.frame(Z_train))
+  df_calib <- data.frame(y=y_calib_aug, as.data.frame(Z_calib))
+  model <- workhorse(y ~ . -1, data=df_train, ...)        
+  # Get calibration residuals
+  calib_pred <- predict(model, newdata=as.data.frame(X_calib))
+  calib_resid <- y_calib - calib_pred        
+  # Store calibration residuals
+  model <- workhorse(y ~ . -1, data=df_calib, ...)
+  model$residuals <- calib_resid    
   model$y_mean <- y_mean
   model$X_mean <- X_mean
   model$X_sd <- X_sd
-  class(model) <- c("ridgemodel", "lm")
+  model$model <- model
+  class(model) <- c("ridgemodel", class(model$model))
   return(model)
 }
 
 #' @export
 predict.ridgemodel <- function(object, newdata, 
-                               method=c("gaussian", "surrogate", "bootstrap", "tsbootstrap"), 
-                               interval=c("none", "prediction"), seed=123, ...) {
+                             method=c("none", "gaussian", "surrogate", "bootstrap", "tsbootstrap"), 
+                             level=95, nsim=100, seed=123, ...) {
   stopifnot(inherits(object, "ridgemodel"))
   set.seed(seed)
   method <- match.arg(method)
-  interval <- match.arg(interval)
-  if (object$type_residuals == "gaussian") {
+    
     # Convert newdata to matrix if it isn't already
     if (!is.matrix(newdata)) newdata <- as.matrix(newdata)
+    
     # Check dimensions
     if (length(object$X_mean) != ncol(newdata)) {
       stop("Number of variables in newdata (", ncol(newdata), 
            ") must match the training data (", length(object$X_mean), ")")
     }
+    
     # Scale new data using training scaling parameters
     newdata_scaled <- scale(newdata, 
-                            center = object$X_mean,
-                            scale = object$X_sd)
-    # Make predictions
-    pred <- stats::predict.lm(object, as.data.frame(newdata_scaled), interval=interval, ...) + object$y_mean
-    return(drop(pred))
-  }
-  if (object$type_residuals == "calibrated") {        
-    if (!is.matrix(newdata)) newdata <- as.matrix(newdata)        
-    # Check dimensions
-    if (length(object$X_mean) != ncol(newdata)) {
-      stop("Number of variables in newdata (", ncol(newdata), 
-           ") must match the training data (", length(object$X_mean), ")")
-    }        
-    # Scale new data using training scaling parameters
-    newdata_scaled <- scale(newdata, 
-                            center = object$X_mean,
-                            scale = object$X_sd)        
+                          center = object$X_mean,
+                          scale = object$X_sd)
+    
+    # Convert to data frame and add column names if missing
+    newdata_df <- as.data.frame(newdata_scaled)
+    if (is.null(colnames(newdata_df))) {
+      colnames(newdata_df) <- paste0("V", seq_len(ncol(newdata_df)))
+    }
+    
+    # Use predict on the underlying model
+    pred <- try(predict(object$model, newdata = newdata_df, ...), silent=TRUE)
+    if (inherits(pred, "try-error")) {
+      pred <- predict(object$model, as.matrix(newdata_df), ...)
+    }
     # Get point predictions
-    pred <- stats::predict.lm(object, as.data.frame(newdata_scaled), interval="none") + object$y_mean        
-    # Check if interval prediction is requested
-    if (interval == "prediction") {
-      # Get level from ... or use default 0.95
-      level <- if (!is.null(list(...)$level)) list(...)$level else 0.95            
+    if (method == "none") {  
+      return(drop(pred) + object$y_mean)
+    } else {
       # Generate simulations
-      sims <- simulate.ridgemodel(object, newdata = newdata, nsim = 1000, 
-                                  method=method, seed=seed)            
+      sims <- simulate.ridgemodel(object, newdata = newdata, nsim = nsim, 
+                                  method = method, seed = seed)            
       # Calculate prediction intervals using empirical quantiles
-      alpha <- (1 - level) / 2
+      alpha <- (1 - level/100) / 2
       lower <- apply(sims, 1, quantile, probs = alpha)
       upper <- apply(sims, 1, quantile, probs = 1 - alpha)            
       # Return as matrix with columns fit, lwr, upr
-      return(cbind(fit = drop(pred), 
-                   lwr = lower,
-                   upr = upper))
-    }        
-    return(drop(pred))
+      return(cbind(fit = drop(pred) + object$y_mean, 
+                  lwr = lower,
+                  upr = upper))
+    }
   }
-}
+
 
 #' @export
-simulate.ridgemodel <- function(object, newdata, nsim = 100L, seed = 123, 
-                                method=c("gaussian", "surrogate", "bootstrap", "tsbootstrap"), ...) {
-  stopifnot(inherits(object, "ridgemodel"))
+simulate.ridgemodel <- function(object, newdata, nsim = 100, 
+                              method = c("gaussian", "surrogate", "bootstrap", "tsbootstrap"),
+                              seed = 123, ...) {
+  
   set.seed(seed)  
   method <- match.arg(method)
-  # Get predictions for new data
-  fitted_values <- predict.ridgemodel(object, newdata = newdata, method="gaussian")
+  
+  # Scale newdata
+  newdata_scaled <- scale(as.matrix(newdata), 
+                         center = object$X_mean,
+                         scale = object$X_sd)
+  
+  # Try prediction with data frame first
+  pred <- try(predict(object$model, newdata = as.data.frame(newdata_scaled)), silent = TRUE) + object$y_mean
+  
+  # If that fails, try with matrix
+  if (inherits(pred, "try-error")) {
+    pred <- predict(object$model, newdata = newdata_scaled) + object$y_mean
+  }
   
   if (method == "gaussian") {    
     # Get the residual standard error from the model
     sigma <- sqrt(sum(object$residuals^2) / object$df.residual)
     # Generate random normal errors
-    errors <- matrix(rnorm(length(fitted_values) * nsim, 
+    errors <- matrix(rnorm(length(pred) * nsim, 
                            mean = 0, 
                            sd = sigma), 
-                     nrow = length(fitted_values), 
+                     nrow = length(pred), 
                      ncol = nsim)
   }
   
   if (method == "surrogate") {
-    errors <- matrix(0, nrow = length(fitted_values), ncol = nsim)
+    errors <- matrix(0, nrow = length(pred), ncol = nsim)
     for (i in 1:nsim) {
       set.seed(seed + i*10)
-      errors[,i] <- as.numeric(tseries::surrogate(sample(object$residuals, size=length(fitted_values), replace=TRUE)))
+      errors[,i] <- as.numeric(tseries::surrogate(sample(object$residuals, size=length(pred), replace=TRUE)))
     }
   }
   
   if (method == "bootstrap") {
-    errors <- matrix(0, nrow = length(fitted_values), ncol = nsim)
+    errors <- matrix(0, nrow = length(pred), ncol = nsim)
     for (i in 1:nsim) {
       set.seed(seed + i*100)
-      errors[,i] <- sample(object$residuals, size=length(fitted_values), replace=TRUE)
+      errors[,i] <- sample(object$residuals, size=length(pred), replace=TRUE)
     }
   }
   
   if (method == "tsbootstrap") {
-    errors <- matrix(0, nrow = length(fitted_values), ncol = nsim)
+    errors <- matrix(0, nrow = length(pred), ncol = nsim)
     for (i in 1:nsim) {
       set.seed(seed + i*1000)     
-      errors[,i] <- as.numeric(tseries::tsbootstrap(sample(object$residuals, size=length(fitted_values), replace=TRUE), type="block"))
+      errors[,i] <- as.numeric(tseries::tsbootstrap(sample(object$residuals, size=length(pred), replace=TRUE), type="block"))
     }
   }
   
   # Add errors to fitted values to create simulations
-  result <- errors + fitted_values
+  result <- errors + pred
   # Convert to data.frame to match simulate.lm output format
   result <- as.data.frame(result)
   names(result) <- paste0("sim_", 1:nsim)
@@ -179,12 +168,13 @@ ridgemodel.formula <- function(formula, data, workhorse=stats::lm,
   y <- model.response(mf)
   X <- model.matrix(formula, data)[,-1, drop=FALSE]  # Remove intercept column  
   # Call the original caliblm function
-  result <- misc::ridgemodel(X, y, workhorse=workhorse, 
+  result <- ridgemodel(X, y, workhorse=workhorse, 
                              lambda=lambda, seed=seed, ...)  
   # Add formula-related attributes
   result$call <- match.call()
   result$terms <- terms(formula, data=data)
   result$model <- mf  
+  result$model$model <- result
   return(result)
 }
 

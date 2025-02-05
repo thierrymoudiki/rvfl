@@ -44,7 +44,7 @@ print(confint(ridge_model))
 ## Make predictions
 ```{r eval=TRUE}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method = "gaussian")
 ```
 
 ## Compare predictions
@@ -109,7 +109,9 @@ polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
         col=rgb(0, 0, 1, 0.2), border=NA)
 points(results$Actual, results$Ridge_Pred)  # Replot points over shading
 abline(0, 1, col="red", lty=2)  # Add diagonal line
+```
 
+```{r}
 # Add simulation plot
 par(mfrow=c(1,1))
 # Generate 100 simulations
@@ -156,7 +158,7 @@ print(confint(ridge_model))
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method = "gaussian")
 
 results <- data.frame(
   Actual = Boston[-train_idx, ]$medv,
@@ -260,7 +262,7 @@ print(confint(ridge_model))
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method = "gaussian")
 
 results <- data.frame(
   Actual = longley[-train_idx, ]$Employed,
@@ -364,7 +366,7 @@ print(confint(ridge_model))
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method = "gaussian")
 
 results <- data.frame(
   Actual = UScrime[-train_idx, ]$y,
@@ -478,7 +480,7 @@ print(confint(ridge_model))
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method = "gaussian")
 
 results <- data.frame(
   Actual = car_data[-train_idx, "Price"],
