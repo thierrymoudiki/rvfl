@@ -35,7 +35,7 @@ ridgemodel <- function(X, y, workhorse=stats::lm, lambda=10**seq(-10, 10, length
   calib_resid <- y_calib - calib_pred        
   # Store calibration residuals
   model <- workhorse(y ~ . -1, data=df_calib, ...)
-  model$residuals <- calib_resid    
+  model$residuals <- drop(calib_resid)
   model$y_mean <- y_mean
   model$X_mean <- X_mean
   model$X_sd <- X_sd
@@ -110,11 +110,11 @@ simulate.ridgemodel <- function(object, newdata, nsim = 100,
                          scale = object$X_sd)
   
   # Try prediction with data frame first
-  pred <- try(predict(object$model, newdata = as.data.frame(newdata_scaled)), silent = TRUE) + object$y_mean
+  pred <- try(drop(predict(object$model, newdata = as.data.frame(newdata_scaled))), silent = TRUE) + object$y_mean
   
   # If that fails, try with matrix
   if (inherits(pred, "try-error")) {
-    pred <- predict(object$model, newdata = newdata_scaled) + object$y_mean
+    pred <- drop(predict(object$model, newdata = newdata_scaled)) + object$y_mean
   }
   
   if (method == "gaussian") {    
@@ -153,7 +153,12 @@ simulate.ridgemodel <- function(object, newdata, nsim = 100,
   }
   
   # Add errors to fitted values to create simulations
-  result <- errors + pred
+  misc::debug_print(errors)
+  misc::debug_print(pred)
+  misc::debug_print(dim(errors))
+  misc::debug_print(dim(pred))
+  misc::debug_print(length(pred))
+  result <- errors + drop(pred)
   # Convert to data.frame to match simulate.lm output format
   result <- as.data.frame(result)
   names(result) <- paste0("sim_", 1:nsim)
