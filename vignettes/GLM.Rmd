@@ -43,7 +43,7 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma, lambda=10**seq(-10, 10, 100))
+ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
 #print(confint(ridge_model))
@@ -155,7 +155,7 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma, lambda=10**seq(-10, 10, 100))
+ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
 #print(confint(ridge_model))
@@ -269,7 +269,7 @@ print(confint(lm_model))
 # Fit calibrated model 
 start <- proc.time()[3]
 ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
-                               y = train_data$Price, engine = glmGamma, lambda=10**seq(-10, 10, 100))
+                               y = train_data$Price, engine = glmGamma)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
 #print(confint(ridge_model))

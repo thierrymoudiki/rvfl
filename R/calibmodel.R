@@ -1,26 +1,27 @@
 #' @export
-calibmodel <- function(X, y, engine=stats::lm, lambda=NULL, seed=123, ...) {
-  set.seed(seed)  
+calibmodel <- function(X, y, engine=stats::lm, lambda=10**seq(-10, 10, length.out=100), seed=123, ...) {
+  set.seed(seed) 
+  if (!is.null(lambda)) {
+    if (length(lambda) > 1){
+      lambda <- select_ridge_lambda(X, y, lambda)$lambda.min
+    }
+    sqrt_lambda <- sqrt(lambda)    
+  } 
   n_train <- floor(0.5 * nrow(X))
   y_mean <- mean(y)  
   X_mean <- colMeans(X)
   X_sd <- apply(X, 2, sd)
   X_scaled <- scale(X, center=X_mean, scale=X_sd)
-  y <- y - y_mean
+  response <- y - y_mean
   p <- ncol(X)
-  if (!is.null(lambda)) {
-    if (length(lambda) > 1){
-      lambda <- select_ridge_lambda(X_scaled, y, lambda)$lambda.min
-    }
-    sqrt_lambda <- sqrt(lambda)    
-  }
   # Obtain calibration residuals
   # Split data into calibration and training sets
-  train_idx <- sample(nrow(X), size=n_train)
+  train_idx <- as.integer(create_data_partition(y)[[1]])
+  #sample(nrow(X), size=n_train)
   X_train <- X_scaled[train_idx,]
-  y_train <- y[train_idx]
+  y_train <- response[train_idx]
   X_calib <- X_scaled[-train_idx,]
-  y_calib <- y[-train_idx]                
+  y_calib <- response[-train_idx]                
   # Fit model on training data with augmented matrices
   if (!is.null(lambda)) {
   diag_sqrt_lambda <- diag(sqrt_lambda, p, p)
@@ -43,7 +44,7 @@ calibmodel <- function(X, y, engine=stats::lm, lambda=NULL, seed=123, ...) {
   df_calib <- data.frame(y=y_calib_aug, as.data.frame(Z_calib))
   model <- engine(y ~ . -1, data=df_train, ...)        
   # Get calibration residuals
-  calib_pred <- predict(model, newdata=as.data.frame(X_calib))
+  calib_pred <- predict(model, newdata=as.data.frame(Z_calib))
   calib_resid <- y_calib - calib_pred        
   # Store calibration residuals
   model <- engine(y ~ . -1, data=df_calib, ...)
@@ -211,24 +212,24 @@ select_ridge_lambda <- function(X, y, lambda_seq = 10**seq(-10, 10, length.out=1
   U <- svd_X$u
   V <- svd_X$v
   
-  # Calculate GCV for each lambda
-  gcv_scores <- sapply(lambda_seq, function(lambda) {
-    # Calculate effective degrees of freedom
-    df <- sum(d^2 / (d^2 + lambda))
-    
-    # Calculate ridge coefficients
-    ridge_coef <- V %*% (diag(d/(d^2 + lambda)) %*% (t(U) %*% y))
-    
-    # Calculate fitted values
-    fitted <- X_scaled %*% ridge_coef
-    
-    # Calculate residual sum of squares
-    rss <- sum((y - fitted)^2)
-    
-    # Calculate GCV
-    gcv <- (rss/n) / (1 - df/n)^2
-    return(gcv)
-  })
+  # Calculate GCV for all lambda values at once
+  div <- d^2 + rep(lambda_seq, rep(length(d), length(lambda_seq)))
+  dim(div) <- c(length(d), length(lambda_seq))
+  
+  # Calculate coefficients for all lambda values
+  a <- drop(d * (t(U) %*% y)) / div
+  ridge_coef <- V %*% a
+  
+  # Calculate fitted values for all lambda values
+  fitted <- X_scaled %*% ridge_coef
+  
+  # Calculate effective degrees of freedom for all lambda values
+  df <- colSums(matrix(d^2/div, length(d)))
+  
+  # Calculate GCV scores
+  resid <- y - fitted
+  rss <- colSums(resid^2)
+  gcv_scores <- (rss/n) / (1 - df/n)^2
   
   # Find lambda with minimum GCV
   best_idx <- which.min(gcv_scores)

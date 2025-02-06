@@ -1,14 +1,22 @@
 ---
-title: "Ridge model (bootstrap) model"
+title: "Ridge GLM Gamma model"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ridge model (bootstrap) model}
+  %\VignetteIndexEntry{Ridge GLM Gamma model}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r}
 library(rvfl)
+```
+
+```{r}
+glmGamma <- function(formula, ...) {
+  stats::glm(formula = formula, 
+             family = Gamma(link = "log"),
+             ...)
+}
 ```
 
 # Example 1: MPG Prediction (mtcars dataset)
@@ -23,6 +31,7 @@ train_data <- mtcars[train_idx, ]
 test_data <- mtcars[-train_idx, -1]
 ```
 
+
 ## Fit models
 ```{r}
 # Fit regular linear model
@@ -34,17 +43,17 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-1]), y = train_data$mpg, seed=123)
+ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
-print(confint(ridge_model))
+#print(confint(ridge_model))
 #print(simulate(ridge_model, newdata = test_data))
 ```
 
 ## Make predictions
 ```{r eval=TRUE}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate")
 ```
 
 ## Compare predictions
@@ -146,17 +155,17 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-14]), y = train_data$medv)
+ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
-print(confint(ridge_model))
+#print(confint(ridge_model))
 #print(simulate(ridge_model, newdata = test_data))
 ```
 
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate")
 
 results <- data.frame(
   Actual = Boston[-train_idx, ]$medv,
@@ -227,215 +236,7 @@ matplot(sims, type = "l",
 lines(Boston[-train_idx, ]$medv, col = "red")
 ```
 
-# Example 3: Economic Indicators (Longley dataset)
-
-## Load and prepare data
-```{r}
-data(longley)
-
-set.seed(1243)
-train_idx <- sample(nrow(longley), size = floor(0.8 * nrow(longley)))
-train_data <- longley[train_idx, ]
-test_data <- longley[-train_idx, -7]  # -7 removes 'Employed' (target variable)
-```
-
-## Fit models
-```{r}
-# Fit regular linear model
-start <- proc.time()[3]
-lm_model <- lm(Employed ~ ., data = train_data)
-print(proc.time()[3] - start)
-print(summary(lm_model))
-print(confint(lm_model))
-
-# Fit calibrated model 
-start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-7]), y = train_data$Employed)
-print(proc.time()[3] - start)
-print(summary(ridge_model))
-print(confint(ridge_model))
-#print(simulate(ridge_model, newdata = test_data))
-```
-
-## Make predictions and compare
-```{r eval=TRUE, fig.width=7.5}
-lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
-
-results <- data.frame(
-  Actual = longley[-train_idx, ]$Employed,
-  LM_Pred = lm_pred[,"fit"],
-  LM_Lower = lm_pred[,"lwr"],
-  LM_Upper = lm_pred[,"upr"],
-  Ridge_Pred = ridge_pred[,"fit"],
-  Ridge_Lower = ridge_pred[,"lwr"], 
-  Ridge_Upper = ridge_pred[,"upr"]
-)
-
-# Print results
-print("Prediction Intervals Comparison:")
-print(head(results))
-
-# Calculate coverage and Winkler scores
-lm_coverage <- mean(longley[-train_idx, ]$Employed >= results$LM_Lower & 
-                   longley[-train_idx, ]$Employed <= results$LM_Upper)
-ridge_coverage <- mean(longley[-train_idx, ]$Employed >= results$Ridge_Lower & 
-                      longley[-train_idx, ]$Employed <= results$Ridge_Upper)
-
-lm_winkler <- misc::winkler_score(longley[-train_idx, ]$Employed, results$LM_Lower, results$LM_Upper)
-ridge_winkler <- misc::winkler_score(longley[-train_idx, ]$Employed, results$Ridge_Lower, results$Ridge_Upper)
-
-print(sprintf("\nPrediction interval metrics:"))
-print(sprintf("Linear Model: %.1f%% coverage, %.3f Winkler score", 
-              100 * lm_coverage, mean(lm_winkler)))
-print(sprintf("Calibrated Model: %.1f%% coverage, %.3f Winkler score", 
-              100 * ridge_coverage, mean(ridge_winkler)))
-
-# Visualization
-# Set common y-axis limits for both plots
-y_limits <- range(c(results$LM_Lower, results$LM_Upper,
-                   results$Ridge_Lower, results$Ridge_Upper))
-
-par(mfrow=c(1,2))
-
-# Linear Model Plot
-plot(results$Actual, results$LM_Pred, 
-     main="Linear Model Predictions",
-     xlab="Actual Employment", ylab="Predicted Employment",
-     ylim=y_limits)
-x_ordered <- order(results$Actual)
-polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
-        c(results$LM_Lower[x_ordered], rev(results$LM_Upper[x_ordered])),
-        col=rgb(0, 0, 1, 0.2), border=NA)
-points(results$Actual, results$LM_Pred)
-abline(0, 1, col="red", lty=2)
-
-# Ridge Model Plot
-plot(results$Actual, results$Ridge_Pred,
-     main="Ridge Model Predictions",
-     xlab="Actual Employment", ylab="Predicted Employment",
-     ylim=y_limits)
-polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
-        c(results$Ridge_Lower[x_ordered], rev(results$Ridge_Upper[x_ordered])),
-        col=rgb(0, 0, 1, 0.2), border=NA)
-points(results$Actual, results$Ridge_Pred)
-abline(0, 1, col="red", lty=2)
-
-# Add simulation plot
-par(mfrow=c(1,1))
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
-matplot(sims, type = "l", 
-        col = rgb(0, 0, 1, 0.1), lty = 1,
-        xlab = "obs. #", ylab = "Simulated Employment",
-        main = "Ridge Model Simulations")
-lines(longley[-train_idx, ]$Employed, col = "red")
-```
-
-# Example 4: US Crime Rate Analysis
-
-## Load and prepare data
-```{r}
-data(UScrime)
-
-set.seed(1243)
-train_idx <- sample(nrow(UScrime), size = floor(0.8 * nrow(UScrime)))
-train_data <- UScrime[train_idx, ]
-test_data <- UScrime[-train_idx, -16]  # -16 removes 'y' (crime rate)
-```
-
-## Fit models
-```{r}
-# Fit regular linear model
-start <- proc.time()[3]
-lm_model <- lm(y ~ ., data = train_data)
-print(proc.time()[3] - start)
-print(summary(lm_model))
-print(confint(lm_model))
-
-# Fit calibrated model 
-start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-16]), y = train_data$y)
-print(proc.time()[3] - start)
-print(summary(ridge_model))
-print(confint(ridge_model))
-#print(simulate(ridge_model, newdata = test_data))
-```
-
-## Make predictions and compare
-```{r eval=TRUE, fig.width=7.5}
-lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
-
-results <- data.frame(
-  Actual = UScrime[-train_idx, ]$y,
-  LM_Pred = lm_pred[,"fit"],
-  LM_Lower = lm_pred[,"lwr"],
-  LM_Upper = lm_pred[,"upr"],
-  Ridge_Pred = ridge_pred[,"fit"],
-  Ridge_Lower = ridge_pred[,"lwr"], 
-  Ridge_Upper = ridge_pred[,"upr"]
-)
-
-# Print results
-print("Prediction Intervals Comparison:")
-print(results)
-
-# Calculate coverage and Winkler scores
-lm_coverage <- mean(UScrime[-train_idx, ]$y >= results$LM_Lower & 
-                   UScrime[-train_idx, ]$y <= results$LM_Upper)
-ridge_coverage <- mean(UScrime[-train_idx, ]$y >= results$Ridge_Lower & 
-                      UScrime[-train_idx, ]$y <= results$Ridge_Upper)
-
-lm_winkler <- misc::winkler_score(UScrime[-train_idx, ]$y, results$LM_Lower, results$LM_Upper)
-ridge_winkler <- misc::winkler_score(UScrime[-train_idx, ]$y, results$Ridge_Lower, results$Ridge_Upper)
-
-print(sprintf("\nPrediction interval metrics:"))
-print(sprintf("Linear Model: %.1f%% coverage, %.3f Winkler score", 
-              100 * lm_coverage, mean(lm_winkler)))
-print(sprintf("Calibrated Model: %.1f%% coverage, %.3f Winkler score", 
-              100 * ridge_coverage, mean(ridge_winkler)))
-
-# Visualization
-# Set common y-axis limits for both plots
-y_limits <- range(c(results$LM_Lower, results$LM_Upper,
-                   results$Ridge_Lower, results$Ridge_Upper))
-
-par(mfrow=c(1,2))
-
-# Linear Model Plot
-plot(results$Actual, results$LM_Pred, 
-     main="Linear Model Predictions",
-     xlab="Actual Crime Rate", ylab="Predicted Crime Rate",
-     ylim=y_limits)
-x_ordered <- order(results$Actual)
-polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
-        c(results$LM_Lower[x_ordered], rev(results$LM_Upper[x_ordered])),
-        col=rgb(0, 0, 1, 0.2), border=NA)
-points(results$Actual, results$LM_Pred)
-abline(0, 1, col="red", lty=2)
-
-# Ridge Model Plot
-plot(results$Actual, results$Ridge_Pred,
-     main="Ridge Model Predictions",
-     xlab="Actual Crime Rate", ylab="Predicted Crime Rate",
-     ylim=y_limits)
-polygon(c(results$Actual[x_ordered], rev(results$Actual[x_ordered])),
-        c(results$Ridge_Lower[x_ordered], rev(results$Ridge_Upper[x_ordered])),
-        col=rgb(0, 0, 1, 0.2), border=NA)
-points(results$Actual, results$Ridge_Pred)
-abline(0, 1, col="red", lty=2)
-
-# Add simulation plot
-par(mfrow=c(1,1))
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
-matplot(sims, type = "l", 
-        col = rgb(0, 0, 1, 0.1), lty = 1,
-        xlab = "obs. #", ylab = "Simulated Crime Rate",
-        main = "Ridge Model Simulations")
-lines(UScrime[-train_idx, ]$y, col = "red")
-```
-
-# Example 5: Car Price Analysis (Cars93 dataset)
+# Example 3: Car Price Analysis (Cars93 dataset)
 
 ## Load and prepare data
 ```{r}
@@ -468,17 +269,17 @@ print(confint(lm_model))
 # Fit calibrated model 
 start <- proc.time()[3]
 ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
-                               y = train_data$Price)
+                               y = train_data$Price, engine = glmGamma)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
-print(confint(ridge_model))
+#print(confint(ridge_model))
 #print(simulate(ridge_model, newdata = as.matrix(test_data)))
 ```
 
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate")
 
 results <- data.frame(
   Actual = car_data[-train_idx, "Price"],
