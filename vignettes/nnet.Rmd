@@ -1,8 +1,8 @@
 ---
-title: "Ridge GLM model"
+title: "Ridge NNET model"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ridge GLM model}
+  %\VignetteIndexEntry{Ridge NNET model}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -45,7 +45,7 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::ridgemodel(X = as.matrix(train_data[,-1]), y = train_data$mpg, workhorse = glmGamma)
+ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
 #print(confint(ridge_model))
@@ -54,8 +54,8 @@ print(summary(ridge_model))
 
 ## Make predictions
 ```{r eval=TRUE}
-(lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction"))
-(ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate"))
+lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate")
 ```
 
 ## Compare predictions
@@ -124,14 +124,14 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::ridgemodel(X = as.matrix(train_data[,-14]), y = train_data$medv, workhorse = glmGamma)
+ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
 #print(confint(ridge_model))
 #print(simulate(ridge_model, newdata = test_data))
 
-(lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction"))
-(ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate"))
+lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate")
 ```
 
 ## Make predictions and compare
@@ -209,15 +209,15 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::ridgemodel(X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
-                               y = train_data$Price, workhorse = glmGamma)
+ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
+                               y = train_data$Price, engine = glmGamma)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
 #print(confint(ridge_model))
 #print(simulate(ridge_model, newdata = as.matrix(test_data)))
 
-(lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction"))
-(ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate"))
+lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate")
 ```
 
 ## Make predictions and compare

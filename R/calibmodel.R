@@ -1,6 +1,5 @@
 #' @export
-ridgemodel <- function(X, y, workhorse=stats::lm, lambda=10**seq(-10, 10, length.out=100), 
-                       seed=123, ...) {
+calibmodel <- function(X, y, engine=stats::lm, lambda=NULL, seed=123, ...) {
   set.seed(seed)  
   n_train <- floor(0.5 * nrow(X))
   y_mean <- mean(y)  
@@ -9,10 +8,12 @@ ridgemodel <- function(X, y, workhorse=stats::lm, lambda=10**seq(-10, 10, length
   X_scaled <- scale(X, center=X_mean, scale=X_sd)
   y <- y - y_mean
   p <- ncol(X)
-  if (length(lambda) > 1){
-    lambda <- select_ridge_lambda(X_scaled, y, lambda)$lambda.min
+  if (!is.null(lambda)) {
+    if (length(lambda) > 1){
+      lambda <- select_ridge_lambda(X_scaled, y, lambda)$lambda.min
+    }
+    sqrt_lambda <- sqrt(lambda)    
   }
-  sqrt_lambda <- sqrt(lambda)    
   # Obtain calibration residuals
   # Split data into calibration and training sets
   train_idx <- sample(nrow(X), size=n_train)
@@ -21,34 +22,45 @@ ridgemodel <- function(X, y, workhorse=stats::lm, lambda=10**seq(-10, 10, length
   X_calib <- X_scaled[-train_idx,]
   y_calib <- y[-train_idx]                
   # Fit model on training data with augmented matrices
+  if (!is.null(lambda)) {
   diag_sqrt_lambda <- diag(sqrt_lambda, p, p)
   Z_train <- rbind(X_train, diag_sqrt_lambda)
   Z_calib <- rbind(X_calib, diag_sqrt_lambda)
-  rep_0_p <- rep(0, p)
-  y_train_aug <- c(y_train, rep_0_p)
-  y_calib_aug <- c(y_calib, rep_0_p)        
+  } else {
+    Z_train <- X_train
+    Z_calib <- X_calib
+  }
+  # Compare functions using identical()
+  if (!is.null(lambda)) {
+    rep_0_p <- rep(0, p)
+    y_train_aug <- c(y_train, rep_0_p)
+    y_calib_aug <- c(y_calib, rep_0_p)      
+  } else {
+    y_train_aug <- y_train
+    y_calib_aug <- y_calib
+  }  
   df_train <- data.frame(y=y_train_aug, as.data.frame(Z_train))
   df_calib <- data.frame(y=y_calib_aug, as.data.frame(Z_calib))
-  model <- workhorse(y ~ . -1, data=df_train, ...)        
+  model <- engine(y ~ . -1, data=df_train, ...)        
   # Get calibration residuals
   calib_pred <- predict(model, newdata=as.data.frame(X_calib))
   calib_resid <- y_calib - calib_pred        
   # Store calibration residuals
-  model <- workhorse(y ~ . -1, data=df_calib, ...)
+  model <- engine(y ~ . -1, data=df_calib, ...)
   model$residuals <- drop(calib_resid)
   model$y_mean <- y_mean
   model$X_mean <- X_mean
   model$X_sd <- X_sd
   model$model <- model
-  class(model) <- c("ridgemodel", class(model$model))
+  class(model) <- c("calibmodel", class(model$model))
   return(model)
 }
 
 #' @export
-predict.ridgemodel <- function(object, newdata, 
+predict.calibmodel <- function(object, newdata, 
                              method=c("none", "gaussian", "surrogate", "bootstrap", "tsbootstrap"), 
                              level=95, nsim=100, seed=123, ...) {
-  stopifnot(inherits(object, "ridgemodel"))
+  stopifnot(inherits(object, "calibmodel"))
   set.seed(seed)
   method <- match.arg(method)
     
@@ -82,7 +94,7 @@ predict.ridgemodel <- function(object, newdata,
       return(drop(pred) + object$y_mean)
     } else {
       # Generate simulations
-      sims <- simulate.ridgemodel(object, newdata = newdata, nsim = nsim, 
+      sims <- simulate.calibmodel(object, newdata = newdata, nsim = nsim, 
                                   method = method, seed = seed)            
       # Calculate prediction intervals using empirical quantiles
       alpha <- (1 - level/100) / 2
@@ -97,7 +109,7 @@ predict.ridgemodel <- function(object, newdata,
 
 
 #' @export
-simulate.ridgemodel <- function(object, newdata, nsim = 100, 
+simulate.calibmodel <- function(object, newdata, nsim = 100, 
                               method = c("gaussian", "surrogate", "bootstrap", "tsbootstrap"),
                               seed = 123, ...) {
   
@@ -153,11 +165,11 @@ simulate.ridgemodel <- function(object, newdata, nsim = 100,
   }
   
   # Add errors to fitted values to create simulations
-  misc::debug_print(errors)
-  misc::debug_print(pred)
-  misc::debug_print(dim(errors))
-  misc::debug_print(dim(pred))
-  misc::debug_print(length(pred))
+  #misc::debug_print(errors)
+  #misc::debug_print(pred)
+  #misc::debug_print(dim(errors))
+  #misc::debug_print(dim(pred))
+  #misc::debug_print(length(pred))
   result <- errors + drop(pred)
   # Convert to data.frame to match simulate.lm output format
   result <- as.data.frame(result)
@@ -166,14 +178,14 @@ simulate.ridgemodel <- function(object, newdata, nsim = 100,
 }
 
 #' @export
-ridgemodel.formula <- function(formula, data, workhorse=stats::lm, 
+calibmodel.formula <- function(formula, data, engine=stats::lm, 
                                lambda=0.1, seed=123, ...) {
   # Extract X matrix and y vector from formula and data
   mf <- model.frame(formula, data)
   y <- model.response(mf)
   X <- model.matrix(formula, data)[,-1, drop=FALSE]  # Remove intercept column  
   # Call the original caliblm function
-  result <- ridgemodel(X, y, workhorse=workhorse, 
+  result <- calibmodel(X, y, engine=engine, 
                              lambda=lambda, seed=seed, ...)  
   # Add formula-related attributes
   result$call <- match.call()
