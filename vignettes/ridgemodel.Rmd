@@ -111,7 +111,7 @@ points(results$Actual, results$Ridge_Pred)  # Replot points over shading
 abline(0, 1, col="red", lty=2)  # Add diagonal line
 ```
 
-```{r}
+```{r, fig.width=7.5}
 # Add simulation plot
 par(mfrow=c(1,1))
 # Generate 100 simulations
