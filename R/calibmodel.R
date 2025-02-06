@@ -163,13 +163,7 @@ simulate.calibmodel <- function(object, newdata, nsim = 100,
       errors[,i] <- as.numeric(tseries::tsbootstrap(sample(object$residuals, size=length(pred), replace=TRUE), type="block"))
     }
   }
-  
   # Add errors to fitted values to create simulations
-  #misc::debug_print(errors)
-  #misc::debug_print(pred)
-  #misc::debug_print(dim(errors))
-  #misc::debug_print(dim(pred))
-  #misc::debug_print(length(pred))
   result <- errors + drop(pred)
   # Convert to data.frame to match simulate.lm output format
   result <- as.data.frame(result)
