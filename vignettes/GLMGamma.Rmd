@@ -43,10 +43,10 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
+ridge_model <- rvfl::calibmodel(lambda=NULL, positive_response = TRUE,  X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
-#print(confint(ridge_model))
+print(summary(ridge_model$model))
+print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = test_data))
 ```
 
@@ -122,7 +122,7 @@ abline(0, 1, col="red", lty=2)  # Add diagonal line
 # Add simulation plot
 par(mfrow=c(1,1))
 # Generate 100 simulations
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500, method="surrogate")
 # Plot simulations
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
@@ -155,10 +155,10 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
+ridge_model <- rvfl::calibmodel(lambda=NULL, positive_response = TRUE,  X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
-#print(confint(ridge_model))
+print(summary(ridge_model$model))
+#print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = test_data))
 ```
 
@@ -228,7 +228,7 @@ abline(0, 1, col="red", lty=2)
 
 # Add simulation plot
 par(mfrow=c(1,1))
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500, method="surrogate")
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
         xlab = "obs. #", ylab = "Simulated Median Value",
@@ -268,11 +268,11 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
+ridge_model <- rvfl::calibmodel(lambda=NULL, positive_response = TRUE,  X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
                                y = train_data$Price, engine = glmGamma)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
-#print(confint(ridge_model))
+print(summary(ridge_model$model))
+#print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = as.matrix(test_data)))
 ```
 
@@ -342,7 +342,7 @@ abline(0, 1, col="red", lty=2)
 
 # Add simulation plot
 par(mfrow=c(1,1))
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500, method="surrogate")
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
         xlab = "obs. #", ylab = "Simulated Price ($1000s)",

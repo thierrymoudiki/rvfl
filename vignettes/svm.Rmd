@@ -41,10 +41,10 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
+ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
-#print(confint(ridge_model))
+print(summary(ridge_model$model))
+#print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = test_data))
 ```
 
@@ -120,10 +120,10 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
+ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
-#print(confint(ridge_model))
+print(summary(ridge_model$model))
+#print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = test_data))
 
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
@@ -205,11 +205,11 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
+ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
                                y = train_data$Price, engine = glmGamma)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
-#print(confint(ridge_model))
+print(summary(ridge_model$model))
+#print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = as.matrix(test_data)))
 
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")

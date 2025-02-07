@@ -12,7 +12,7 @@ library(rvfl)
 ```
 
 ```{r}
-glmGamma <- function(formula, ...) {
+glmGaussian <- function(formula, ...) {
   stats::glm(formula = formula, 
              family = "gaussian",
              ...)
@@ -43,17 +43,17 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
+ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGaussian)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
-#print(confint(ridge_model))
+print(summary(ridge_model$model))
+print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = test_data))
 ```
 
 ## Make predictions
 ```{r eval=TRUE}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="gaussian")
 ```
 
 ## Compare predictions
@@ -155,17 +155,17 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
+ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGaussian)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
-#print(confint(ridge_model))
+print(summary(ridge_model$model))
+#print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = test_data))
 ```
 
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="gaussian")
 
 results <- data.frame(
   Actual = Boston[-train_idx, ]$medv,
@@ -268,18 +268,18 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
-                               y = train_data$Price, engine = glmGamma)
+ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
+                               y = train_data$Price, engine = glmGaussian)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
-#print(confint(ridge_model))
+print(summary(ridge_model$model))
+#print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = as.matrix(test_data)))
 ```
 
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate")
+ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="gaussian")
 
 results <- data.frame(
   Actual = car_data[-train_idx, "Price"],
