@@ -67,8 +67,8 @@ calibmodel <- function(X, y, engine=stats::lm, lambda=NULL, positive_response=FA
 
 #' @export
 predict.calibmodel <- function(object, newdata, 
-                             method=c("none", "gaussian", "surrogate", "bootstrap", "tsbootstrap"), 
-                             level=95, nsim=100, seed=123, ...) {
+                               method=c("none", "gaussian", "surrogate", "bootstrap", "tsbootstrap"), 
+                               level=95, nsim=100, seed=123, ...) {
   stopifnot(inherits(object, "calibmodel"))
   set.seed(seed)
   method <- match.arg(method)
