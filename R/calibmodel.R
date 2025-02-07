@@ -69,7 +69,6 @@ calibmodel <- function(X, y, engine=stats::lm, lambda=NULL, positive_response=FA
 predict.calibmodel <- function(object, newdata, 
                                method=c("none", "gaussian", "surrogate", "bootstrap", "tsbootstrap"), 
                                level=95, nsim=100, seed=123, ...) {
-  stopifnot(inherits(object, "calibmodel"))
   set.seed(seed)
   method <- match.arg(method)
     # Convert newdata to matrix if it isn't already
