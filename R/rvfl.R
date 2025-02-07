@@ -54,9 +54,7 @@ predict.rvfl <- function(object, newdata, coeff=NULL, ...) {
   
   # Use calibmodel predict method
   class(object) <- "calibmodel"
-  pred <- predict(object, newX$predictors, coeff=coeff, ...)
-  #class(object) <- c("rvfl", "calibmodel")
-  return(pred)
+  return(predict(object, newX$predictors, coeff=coeff, ...))
 }
 
 

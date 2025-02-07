@@ -366,7 +366,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>lm_model <span class="ot">&lt;-</span> <span class="fu">lm</span>(mpg <span class="sc">~</span> ., <span class="at">data =</span> train_data)</span>
 <span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.007</code></pre>
+##   0.006</code></pre>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(lm_model))</span></code></pre></div>
 <pre><code>## 
 ## Call:
@@ -410,7 +410,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ## converged</code></pre>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.076</code></pre>
+##   0.954</code></pre>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(ridge_model<span class="sc">$</span>model))</span></code></pre></div>
 <pre><code>## a 10-10-1 network with 121 weights
 ## options were - linear output units 
@@ -543,7 +543,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>lm_model <span class="ot">&lt;-</span> <span class="fu">lm</span>(medv <span class="sc">~</span> ., <span class="at">data =</span> train_data)</span>
 <span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.004</code></pre>
+##   0.006</code></pre>
 <div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(lm_model<span class="sc">$</span>model))</span></code></pre></div>
 <pre><code>##       medv            crim                zn             indus       
 ##  Min.   : 5.00   Min.   : 0.00906   Min.   :  0.00   Min.   : 1.210  
@@ -594,7 +594,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ## stopped after 100 iterations</code></pre>
 <div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##    0.07</code></pre>
+##   0.072</code></pre>
 <div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(ridge_model<span class="sc">$</span>model))</span></code></pre></div>
 <pre><code>## a 13-10-1 network with 151 weights
 ## options were - linear output units 

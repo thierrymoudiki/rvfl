@@ -364,7 +364,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>lm_model <span class="ot">&lt;-</span> <span class="fu">lm</span>(mpg <span class="sc">~</span> ., <span class="at">data =</span> train_data)</span>
 <span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.007</code></pre>
+##   0.005</code></pre>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(lm_model))</span></code></pre></div>
 <pre><code>## 
 ## Call:
@@ -411,7 +411,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>ridge_model <span class="ot">&lt;-</span> rvfl<span class="sc">::</span><span class="fu">calibmodel</span>(<span class="at">lambda=</span><span class="cn">NULL</span>, <span class="at">positive_response =</span> <span class="cn">TRUE</span>,  <span class="at">X =</span> <span class="fu">as.matrix</span>(train_data[,<span class="sc">-</span><span class="dv">1</span>]), <span class="at">y =</span> train_data<span class="sc">$</span>mpg, <span class="at">engine =</span> glmGamma)</span>
 <span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.048</code></pre>
+##   0.044</code></pre>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(ridge_model<span class="sc">$</span>model))</span></code></pre></div>
 <pre><code>## 
 ## Call:
@@ -575,7 +575,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a>lm_model <span class="ot">&lt;-</span> <span class="fu">lm</span>(medv <span class="sc">~</span> ., <span class="at">data =</span> train_data)</span>
 <span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.003</code></pre>
+##   0.005</code></pre>
 <div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(lm_model))</span></code></pre></div>
 <pre><code>## 
 ## Call:
@@ -628,7 +628,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a>ridge_model <span class="ot">&lt;-</span> rvfl<span class="sc">::</span><span class="fu">calibmodel</span>(<span class="at">lambda=</span><span class="cn">NULL</span>, <span class="at">positive_response =</span> <span class="cn">TRUE</span>,  <span class="at">X =</span> <span class="fu">as.matrix</span>(train_data[,<span class="sc">-</span><span class="dv">14</span>]), <span class="at">y =</span> train_data<span class="sc">$</span>medv, <span class="at">engine =</span> glmGamma)</span>
 <span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.037</code></pre>
+##   0.028</code></pre>
 <div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(ridge_model<span class="sc">$</span>model))</span></code></pre></div>
 <pre><code>## 
 ## Call:
@@ -826,7 +826,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb63-4"><a href="#cb63-4" tabindex="-1"></a>                               <span class="at">y =</span> train_data<span class="sc">$</span>Price, <span class="at">engine =</span> glmGamma)</span>
 <span id="cb63-5"><a href="#cb63-5" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.008</code></pre>
+##   0.009</code></pre>
 <div class="sourceCode" id="cb65"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(ridge_model<span class="sc">$</span>model))</span></code></pre></div>
 <pre><code>## 
 ## Call:
