@@ -406,7 +406,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>ridge_model <span class="ot">&lt;-</span> rvfl<span class="sc">::</span><span class="fu">rvfl</span>(<span class="at">X =</span> <span class="fu">as.matrix</span>(train_data[,<span class="sc">-</span><span class="dv">1</span>]), <span class="at">y =</span> train_data<span class="sc">$</span>mpg)</span>
 <span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.068</code></pre>
+##   0.092</code></pre>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(ridge_model<span class="sc">$</span>model))</span></code></pre></div>
 <pre><code>## 
 ## Call:
@@ -624,7 +624,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a>ridge_model <span class="ot">&lt;-</span> rvfl<span class="sc">::</span><span class="fu">rvfl</span>(<span class="at">X =</span> <span class="fu">as.matrix</span>(train_data[,<span class="sc">-</span><span class="dv">14</span>]), <span class="at">y =</span> train_data<span class="sc">$</span>medv)</span>
 <span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">proc.time</span>()[<span class="dv">3</span>] <span class="sc">-</span> start)</span></code></pre></div>
 <pre><code>## elapsed 
-##   0.017</code></pre>
+##   0.023</code></pre>
 <div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(ridge_model<span class="sc">$</span>model))</span></code></pre></div>
 <pre><code>## 
 ## Call:
