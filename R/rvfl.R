@@ -44,7 +44,6 @@ rvfl.formula <- function(formula, data, ...) {
 #' @export
 predict.rvfl <- function(object, newdata, coeff=NULL, ...) {
   stopifnot(inherits(object, "rvfl"))
-  
   # Create new predictors
   newX <- create_new_predictors(newdata, 
                                nb_hidden = object$n_hidden_features,
@@ -56,8 +55,7 @@ predict.rvfl <- function(object, newdata, coeff=NULL, ...) {
   # Use calibmodel predict method
   class(object) <- "calibmodel"
   pred <- predict(object, newX$predictors, coeff=coeff, ...)
-  class(object) <- c("rvfl", "calibmodel")
-  
+  #class(object) <- c("rvfl", "calibmodel")
   return(pred)
 }
 
