@@ -185,7 +185,7 @@ calibmodel.formula <- function(formula, data, engine=stats::lm,
   y <- model.response(mf)
   X <- model.matrix(formula, data)[,-1, drop=FALSE]  # Remove intercept column  
   # Call the original caliblm function
-  result <- calibmodel(X, y, engine=engine, 
+  result <- rvfl::calibmodel(X, y, engine=engine, 
                              lambda=lambda, seed=seed, ...)  
   # Add formula-related attributes
   result$call <- match.call()
@@ -195,6 +195,62 @@ calibmodel.formula <- function(formula, data, engine=stats::lm,
   return(result)
 }
 
+summary.calibmodel <- function(object, newdata=NULL) {
+  summary(object$model)
+  # Get original summary
+  orig_summary <- summary(object$model)  
+  # Calculate numerical derivatives
+  if (is.null(newdata)) {
+    X <- model.matrix(object$model)
+  } else {
+    X <- model.matrix(object$model, newdata)
+  }
+  y <- model.response(model.frame(object$model))
+  n <- nrow(X)
+  p <- ncol(X)
+  h <- 1e-5  # Small step size for numerical derivatives  
+  # Initialize matrices for derivatives
+  derivatives <- matrix(0, nrow=n, ncol=p)  
+  # Calculate derivatives for each predictor
+  for(j in 1:p) {
+    X_plus <- X
+    X_minus <- X
+    X_plus[,j] <- X_plus[,j] + h
+    X_minus[,j] <- X_minus[,j] - h    
+    pred_plus <- predict(object, X_plus)
+    pred_minus <- predict(object, X_minus)    
+    derivatives[,j] <- (pred_plus - pred_minus)/(2*h)
+  }  
+  # Calculate mean effects and standard errors
+  mean_effects <- colMeans(derivatives)
+  se_effects <- apply(derivatives, 2, sd)/sqrt(n)  
+  # Calculate t-statistics and p-values
+  t_stats <- mean_effects/se_effects
+  p_values <- 2 * pt(-abs(t_stats), df=n-1)  
+  # Calculate confidence intervals
+  qt_975 <- qt(0.975, df=n-1)
+  ci_lower <- mean_effects - qt_975 * se_effects
+  ci_upper <- mean_effects + qt_975 * se_effects  
+  # Create numerical derivatives summary table
+  deriv_summary <- data.frame(
+    Effect = mean_effects,
+    Std.Error = se_effects,
+    t.value = t_stats, 
+    p.value = p_values,
+    CI.lower = ci_lower,
+    CI.upper = ci_upper
+  )
+  rownames(deriv_summary) <- colnames(X)  
+  # Return both summaries
+  list(
+    model_summary = orig_summary,
+    derivatives_summary = deriv_summary
+  )
+}
+
+plot.calibmodel <- function(object) {
+  plot(object$model)
+}
 
 #' @export
 select_ridge_lambda <- function(X, y, lambda_seq = 10**seq(-10, 10, length.out=100), seed = 123) {

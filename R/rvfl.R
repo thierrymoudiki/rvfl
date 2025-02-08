@@ -24,7 +24,7 @@ rvfl <- function(X, y,
   #misc::debug_print(head(new_predictors$predictors[, (ncol(X) + 1):ncol(new_predictors$predictors)]))
   
   # Fit model using calibmodel
-  object <- calibmodel(new_predictors$predictors, y, 
+  object <- rvfl::calibmodel(new_predictors$predictors, y, 
                       engine=engine, lambda=lambda, 
                       positive_response=positive_response,
                       seed=seed, ...)  
@@ -35,7 +35,7 @@ rvfl <- function(X, y,
   object$activ <- activ  
   object$nodes_sim <- nodes_sim
   
-  class(object) <- "rvfl"
+  class(object) <- c("rvfl", "calibmodel")
   return(object)
 }
 
@@ -116,5 +116,15 @@ simulate.rvfl <- function(object, newdata, nsim = 100,
   colnames(result) <- paste0("sim_", 1:nsim)
   return(result)
 }
+
+summary.rvfl <- function(object, newdata=NULL) {
+  summary.calibmodel(object, newdata)
+}
+
+plot.rvfl <- function(object) {
+  plot.calibmodel(object)
+}
+
+
 
 
