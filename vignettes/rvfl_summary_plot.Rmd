@@ -1,0 +1,169 @@
+---
+title: "Ridge model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ridge model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+library(rvfl)
+```
+
+# Example 1: MPG Prediction (mtcars dataset)
+
+## Load and prepare data
+```{r}
+data(mtcars)
+
+set.seed(1243)
+train_idx <- sample(nrow(mtcars), size = floor(0.8 * nrow(mtcars)))
+train_data <- mtcars[train_idx, ]
+test_data <- mtcars[-train_idx, -1]
+```
+
+## Fit models
+```{r fig.size=9}
+# Fit regular linear model
+start <- proc.time()[3]
+lm_model <- lm(mpg ~ ., data = train_data)
+print(proc.time()[3] - start)
+print(summary(lm_model))
+print(confint(lm_model))
+
+# Fit calibrated model 
+start <- proc.time()[3]
+ridge_model <- rvfl::rvfl(n_hidden_features=10L, lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-1]), y = train_data$mpg)
+print(proc.time()[3] - start)
+print(summary(ridge_model))
+print(plot(ridge_model))
+```
+
+# Example 2: Boston Housing Price Prediction
+
+## Load and prepare data
+```{r}
+library(MASS)
+data(Boston)
+
+set.seed(1243)
+train_idx <- sample(nrow(Boston), size = floor(0.8 * nrow(Boston)))
+train_data <- Boston[train_idx, ]
+test_data <- Boston[-train_idx, -14]  # -14 removes 'medv' (target variable)
+```
+
+## Fit models
+```{r fig.size=9}
+# Fit regular linear model
+start <- proc.time()[3]
+lm_model <- lm(medv ~ ., data = train_data)
+print(proc.time()[3] - start)
+print(summary(lm_model))
+print(confint(lm_model))
+
+# Fit calibrated model 
+start <- proc.time()[3]
+ridge_model <- rvfl::rvfl(n_hidden_features=10L, lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-14]), y = train_data$medv)
+print(proc.time()[3] - start)
+print(summary(ridge_model))
+print(plot(ridge_model))
+```
+
+
+# Example 3: Economic Indicators (Longley dataset)
+
+## Load and prepare data
+```{r}
+data(longley)
+
+set.seed(1243)
+train_idx <- sample(nrow(longley), size = floor(0.8 * nrow(longley)))
+train_data <- longley[train_idx, ]
+test_data <- longley[-train_idx, -7]  # -7 removes 'Employed' (target variable)
+```
+
+## Fit models
+```{r fig.size=9}
+# Fit regular linear model
+start <- proc.time()[3]
+lm_model <- lm(Employed ~ ., data = train_data)
+print(proc.time()[3] - start)
+print(summary(lm_model))
+print(confint(lm_model))
+
+# Fit calibrated model 
+start <- proc.time()[3]
+ridge_model <- rvfl::rvfl(n_hidden_features=10L, lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-7]), y = train_data$Employed)
+print(proc.time()[3] - start)
+print(summary(ridge_model))
+print(plot(ridge_model))
+```
+
+# Example 4: US Crime Rate Analysis
+
+## Load and prepare data
+```{r}
+data(UScrime)
+
+set.seed(1243)
+train_idx <- sample(nrow(UScrime), size = floor(0.8 * nrow(UScrime)))
+train_data <- UScrime[train_idx, ]
+test_data <- UScrime[-train_idx, -16]  # -16 removes 'y' (crime rate)
+```
+
+## Fit models
+```{r fig.size=9}
+# Fit regular linear model
+start <- proc.time()[3]
+lm_model <- lm(y ~ ., data = train_data)
+print(proc.time()[3] - start)
+print(summary(lm_model))
+print(confint(lm_model))
+
+# Fit calibrated model 
+start <- proc.time()[3]
+ridge_model <- rvfl::rvfl(n_hidden_features=10L, lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-16]), y = train_data$y)
+print(proc.time()[3] - start)
+print(summary(ridge_model))
+print(plot(ridge_model))
+```
+
+# Example 5: Car Price Analysis (Cars93 dataset)
+
+## Load and prepare data
+```{r}
+data(Cars93, package = "MASS")
+
+# Remove rows with missing values
+Cars93 <- na.omit(Cars93)
+
+# Select numeric predictors and price as response
+predictors <- c("MPG.city", "MPG.highway", "EngineSize", "Horsepower", 
+                "RPM", "Rev.per.mile", "Fuel.tank.capacity", "Length", 
+                "Wheelbase", "Width", "Turn.circle", "Weight")
+car_data <- Cars93[, c(predictors, "Price")]
+
+set.seed(1243)
+train_idx <- sample(nrow(car_data), size = floor(0.8 * nrow(car_data)))
+train_data <- car_data[train_idx, ]
+test_data <- car_data[-train_idx, -which(names(car_data) == "Price")]
+```
+
+## Fit models
+```{r fig.size=9}
+# Fit regular linear model
+start <- proc.time()[3]
+lm_model <- lm(Price ~ ., data = train_data)
+print(proc.time()[3] - start)
+print(summary(lm_model))
+print(confint(lm_model))
+
+# Fit calibrated model 
+start <- proc.time()[3]
+ridge_model <- rvfl::rvfl(n_hidden_features=10L, lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
+                               y = train_data$Price)
+print(proc.time()[3] - start)
+print(summary(ridge_model))
+print(plot(ridge_model))
+```

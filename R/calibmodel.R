@@ -67,7 +67,8 @@ calibmodel <- function(X, y, engine=stats::lm, lambda=NULL, positive_response=FA
 
 #' @export
 predict.calibmodel <- function(object, newdata, 
-                               method=c("none", "gaussian", "surrogate", "bootstrap", "tsbootstrap"), 
+                               method=c("none", "gaussian", "surrogate", 
+                               "bootstrap", "tsbootstrap"), 
                                level=95, nsim=100, seed=123, ...) {
   set.seed(seed)
   method <- match.arg(method)
@@ -111,6 +112,10 @@ predict.calibmodel <- function(object, newdata,
     }
   }
 
+#' @export
+coef.calibmodel <- function(object) {
+  coef(object$model)
+}
 
 #' @export
 simulate.calibmodel <- function(object, newdata, nsim = 100, 
@@ -195,8 +200,8 @@ calibmodel.formula <- function(formula, data, engine=stats::lm,
   return(result)
 }
 
+#' @export
 summary.calibmodel <- function(object, newdata=NULL) {
-  summary(object$model)
   # Get original summary
   orig_summary <- summary(object$model)  
   # Calculate numerical derivatives
@@ -211,6 +216,7 @@ summary.calibmodel <- function(object, newdata=NULL) {
   h <- 1e-5  # Small step size for numerical derivatives  
   # Initialize matrices for derivatives
   derivatives <- matrix(0, nrow=n, ncol=p)  
+  colnames(derivatives) <- colnames(X)
   # Calculate derivatives for each predictor
   for(j in 1:p) {
     X_plus <- X
@@ -223,24 +229,24 @@ summary.calibmodel <- function(object, newdata=NULL) {
   }  
   # Calculate mean effects and standard errors
   mean_effects <- colMeans(derivatives)
-  se_effects <- apply(derivatives, 2, sd)/sqrt(n)  
-  # Calculate t-statistics and p-values
-  t_stats <- mean_effects/se_effects
-  p_values <- 2 * pt(-abs(t_stats), df=n-1)  
-  # Calculate confidence intervals
-  qt_975 <- qt(0.975, df=n-1)
-  ci_lower <- mean_effects - qt_975 * se_effects
-  ci_upper <- mean_effects + qt_975 * se_effects  
+  se_effects <- apply(derivatives, 2, sd)/sqrt(n)
+  
+  # Perform t-tests for each predictor
+  t_test_results <- try(apply(derivatives, 2, function(x) {
+    test <- t.test(x)
+    c(
+      Effect = test$estimate,
+      Std.Error = test$stderr,
+      p.value = test$p.value,
+      CI.lower = test$conf.int[1],
+      CI.upper = test$conf.int[2]
+    )
+  }), silent=TRUE)
+  if (inherits(t_test_results, "try-error")) {
+    t_test_results <- apply(derivatives, 2, summary)
+  }
   # Create numerical derivatives summary table
-  deriv_summary <- data.frame(
-    Effect = mean_effects,
-    Std.Error = se_effects,
-    t.value = t_stats, 
-    p.value = p_values,
-    CI.lower = ci_lower,
-    CI.upper = ci_upper
-  )
-  rownames(deriv_summary) <- colnames(X)  
+  deriv_summary <- as.data.frame(t_test_results)      
   # Return both summaries
   list(
     model_summary = orig_summary,
@@ -248,6 +254,7 @@ summary.calibmodel <- function(object, newdata=NULL) {
   )
 }
 
+#' @export
 plot.calibmodel <- function(object) {
   plot(object$model)
 }
