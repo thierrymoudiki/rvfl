@@ -7,6 +7,6 @@ Description: Random Vector Functional Link Networks.
 License: License: BSD_3_clause Clear + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-Suggests: MASS, e1071, pscl, randomForest
+Suggests: knitr, MASS, e1071, pscl, randomForest, forecast 
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr

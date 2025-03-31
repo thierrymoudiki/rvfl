@@ -37,8 +37,6 @@ start <- proc.time()[3]
 ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-1]), y = train_data$mpg)
 print(proc.time()[3] - start)
 print(summary(ridge_model))
-print(confint(ridge_model))
-#print(simulate(ridge_model, newdata = test_data))
 ```
 
 ## Make predictions

@@ -22,9 +22,8 @@
 #' @examples
 #' y <- ts(rnorm(120,0,3) + 1:120 + 20*sin(2*pi*(1:120)/12), frequency=12)
 #' fit <- tsrvflf(y, h=20)
-#' plot(fit)
+#' #plot(fit)
 #'
-#' @export
 tsrvflf <- function(y, h = 5, 
                     lags = 15L,                
                     engine=stats::lm,
@@ -66,8 +65,8 @@ tsrvflf <- function(y, h = 5,
                             predict_func = predict.rvfl,
                             coeffs = coeffs,
                             ...)$mean
-  misc::debug_print(y_calib)
-  misc::debug_print(y_pred_calibration)
+  #misc::debug_print(y_calib)
+  #misc::debug_print(y_pred_calibration)
   preds_obj <- ml_forecast(y = y_calib, 
                            h = h,  
                            lags = lags, 
@@ -75,23 +74,23 @@ tsrvflf <- function(y, h = 5,
                            predict_func = predict.rvfl,
                            coeffs = coeffs,
                            ...) 
-  misc::debug_print(preds_obj)
+  #misc::debug_print(preds_obj)
   preds <- preds_obj$mean
 
   tspx <- tsp(y_calib)
   start_preds <- tspx[2] + 1 / tspx[3]                         
   matrix_preds <- replicate(B, preds)     
-  misc::debug_print(y_calib)
-  misc::debug_print(y_pred_calibration)
+  #misc::debug_print(y_calib)
+  #misc::debug_print(y_pred_calibration)
   calibrated_raw_residuals <- y_calib - y_pred_calibration
-  misc::debug_print(calibrated_raw_residuals)
+  #misc::debug_print(calibrated_raw_residuals)
   scaled_calib_resids <- base::scale(calibrated_raw_residuals)
   xm <- attr(scaled_calib_resids, "scaled:center")
   xsd <- attr(scaled_calib_resids, "scaled:scale")
   scaled_calibrated_residuals <- base::scale(calibrated_raw_residuals,
                                              center = TRUE,
                                              scale = TRUE)
-  misc::debug_print(scaled_calibrated_residuals)
+  #misc::debug_print(scaled_calibrated_residuals)
   if (type_pi == "kde") {        
         simulated_scaled_calibrated_residuals <-
             rgaussiandens(

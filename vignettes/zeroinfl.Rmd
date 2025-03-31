@@ -1,13 +1,21 @@
 ---
-title: "Zero-inflated GLM model"
+title: "Zero-inflated GLM model (plus other models)"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ridge GLM model}
+  %\VignetteIndexEntry{Zero-inflated GLM model (plus other models)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
+Article production by graduate students in biochemistry Ph.D. programs (sample of 915 biochemistry graduate students).
+
 ```{r}
+options(repos = c(
+                    techtonique = "https://r-packages.techtonique.net",
+                    CRAN = "https://cloud.r-project.org"
+                ))
+install.packages("rvfl")
+
 library(rvfl)
 ```
 
@@ -18,7 +26,7 @@ df <- cbind.data.frame(art = bioChemists$art, model.matrix(art ~ ., bioChemists)
 
 set.seed(1243)
 train_idx <- sample(nrow(df), 
-                    size = floor(0.8 * nrow(df)))                    
+                    size = floor(0.9 * nrow(df)))                    
 train_data <- df[train_idx, ]
 train_data$art <- floor(train_data$art)
 test_data <- df[-train_idx, -1]
@@ -211,12 +219,16 @@ print(head(preds))
 
 ```{r fig.width=8}
 # Plot test set data and prediction interval
-matplot(preds, 
-        type = "l", 
-        lty = 1, 
-        #col = c("gray", "red","gray"), 
-        xlab = "Test set data", 
-        ylab = "Predicted values",
-        main = "Prediction interval")
+plot(preds[, "fit"], 
+     type='l',
+     lwd=2,
+     xlab = "Test set data", 
+     ylab = "Predicted values",
+     main = "Prediction interval", 
+     ylim = c(0, 20))
+polygon(c(1:nrow(preds), rev(c(1:nrow(preds)))), 
+        c(preds[ , "lwr"], rev(preds[ , "upr"])), 
+        col = rgb(0.5, 0.5, 0.5, 0.5), 
+        border = NA)        
 lines(y_test, col = "blue", lwd = 2)
 ```       
