@@ -1,0 +1,222 @@
+---
+title: "Zero-inflated GLM model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ridge GLM model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+library(rvfl)
+```
+
+```{r}
+data("bioChemists", package = "pscl")
+
+df <- cbind.data.frame(art = bioChemists$art, model.matrix(art ~ ., bioChemists)[,-1])
+
+set.seed(1243)
+train_idx <- sample(nrow(df), 
+                    size = floor(0.8 * nrow(df)))                    
+train_data <- df[train_idx, ]
+train_data$art <- floor(train_data$art)
+test_data <- df[-train_idx, -1]
+y_test <- df[-train_idx, 1]
+```
+
+```{r}
+glmPois <- function(formula = "art ~ .", data = train_data) {
+  stats::glm(formula = formula, 
+             family = poisson,
+             data = data)
+}
+
+glmQuasiPois <- function(formula = "art ~ .", data = train_data) {
+  stats::glm(formula = formula, 
+             family = quasipoisson,
+             data = data)
+}
+
+glmNb <- function(formula = "art ~ .", data = train_data) {
+  MASS::glm.nb(formula = formula, 
+               data = data)
+}
+
+zeroInfl <- function(formula="art ~ .", data = train_data) {
+  pscl::zeroinfl(formula = formula, 
+                 data = data)
+}
+
+zeroInflNb <- function(formula = "art ~ .", data = train_data) {
+  pscl::zeroinfl(formula = formula, 
+                 dist = "negbin", 
+                 data = data)
+}
+
+nnetTrainer <- function(formula = "art ~ .", data = train_data) {
+  nnet::nnet(formula = formula, 
+             data = data, 
+             size = 5, 
+             linout = TRUE)
+}
+
+svmTrainer <- function(formula = "art ~ .", data = train_data) {
+  e1071::svm(formula = formula, 
+             data = data, 
+             type = "eps-regression")
+}
+
+rfTrainer <- function(formula = "art ~ .", data = train_data) {
+  randomForest::randomForest(formula = formula, 
+                 data = data)
+}
+```
+
+# Example 
+
+```{r}
+fit_rvfl <- rvfl::rvfl(art ~ .,
+  n_hidden_features=50L, 
+  data = train_data,
+  engine = glmPois,
+  positive_response=TRUE
+)
+
+print(summary(fit_rvfl, newdata = test_data))
+
+preds <- predict(fit_rvfl, newdata = test_data, method="surrogate")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+
+preds <- predict(fit_rvfl, newdata = test_data, method="bootstrap")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+```
+
+```{r}
+fit_rvfl <- rvfl::rvfl(art ~ .,
+  n_hidden_features=50L, 
+  data = train_data,
+  engine = glmQuasiPois,
+  positive_response=TRUE
+)
+
+print(summary(fit_rvfl, newdata = test_data))
+
+preds <- predict(fit_rvfl, newdata = test_data, method="surrogate")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+
+preds <- predict(fit_rvfl, newdata = test_data, method="bootstrap")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+```
+
+```{r}
+fit_rvfl <- rvfl::rvfl(art ~ .,
+  n_hidden_features=50L, 
+  data = train_data,
+  engine = glmNb,
+  positive_response=TRUE
+)
+
+preds <- predict(fit_rvfl, newdata = test_data, method="surrogate")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+```
+
+
+```{r}
+fit_rvfl <- rvfl::rvfl(art ~ .,
+  n_hidden_features=50L, 
+  data = train_data,
+  engine = zeroInfl,
+  positive_response=TRUE
+)
+
+print(summary(fit_rvfl, newdata = test_data))
+
+preds <- predict(fit_rvfl, newdata = test_data, method="surrogate")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+
+preds <- predict(fit_rvfl, newdata = test_data, method="bootstrap")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+```
+
+```{r}
+fit_rvfl <- rvfl::rvfl(art ~ .,
+  n_hidden_features=100L, 
+  data = train_data,
+  engine = zeroInflNb,
+  positive_response=TRUE
+)
+
+print(summary(fit_rvfl, newdata = test_data))
+
+preds <- predict(fit_rvfl, newdata = test_data, method="surrogate")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+
+preds <- predict(fit_rvfl, newdata = test_data, method="bootstrap")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+```
+
+```{r}
+fit_rvfl <- rvfl::rvfl(art ~ .,
+  n_hidden_features=50L, 
+  data = train_data,
+  engine = nnetTrainer,
+  positive_response=TRUE
+)
+
+print(summary(fit_rvfl, newdata = test_data))
+
+preds <- predict(fit_rvfl, newdata = test_data, method="surrogate")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+
+preds <- predict(fit_rvfl, newdata = test_data, method="bootstrap")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+```
+
+```{r}
+fit_rvfl <- rvfl::rvfl(art ~ .,
+  n_hidden_features=50L, 
+  data = train_data,
+  engine = svmTrainer,
+  positive_response=TRUE
+)
+
+preds <- predict(fit_rvfl, newdata = test_data, method="surrogate")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+
+preds <- predict(fit_rvfl, newdata = test_data, method="bootstrap")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+```
+
+
+```{r eval=TRUE}
+fit_rvfl <- rvfl::rvfl(art ~ .,
+  n_hidden_features=50L, 
+  data = train_data,
+  engine = rfTrainer,
+  positive_response=TRUE
+)
+
+print(summary(fit_rvfl, newdata = test_data))
+
+preds <- predict(fit_rvfl, newdata = test_data, method="surrogate")   
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+preds <- predict(fit_rvfl, newdata = test_data, method="bootstrap")
+print(mean((preds[ , "lwr"] <= y_test)*(y_test <= preds[ , "upr"]))*100)
+```
+
+```{r eval=TRUE}
+print(head(preds))
+```
+
+```{r fig.width=8}
+# Plot test set data and prediction interval
+matplot(preds, 
+        type = "l", 
+        lty = 1, 
+        #col = c("gray", "red","gray"), 
+        xlab = "Test set data", 
+        ylab = "Predicted values",
+        main = "Prediction interval")
+lines(y_test, col = "blue", lwd = 2)
+```       

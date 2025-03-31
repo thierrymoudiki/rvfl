@@ -12,7 +12,7 @@ library(rvfl)
 ```
 
 ```{r}
-glmGamma <- function(formula, ...) {
+nnetModel <- function(formula, ...) {
   nnet::nnet(formula = formula, 
              linout = TRUE,
              size = 10,
@@ -45,7 +45,7 @@ print(summary(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
+ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-1]), y = train_data$mpg, engine = nnetModel)
 print(proc.time()[3] - start)
 print(summary(ridge_model$model))
 ##print(confint(ridge_model))
@@ -124,7 +124,7 @@ print(summary(lm_model$model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
+ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-14]), y = train_data$medv, engine = nnetModel)
 print(proc.time()[3] - start)
 print(summary(ridge_model$model))
 ##print(confint(ridge_model))

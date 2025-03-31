@@ -34,17 +34,17 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-1]), y = train_data$mpg)
+fit_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-1]), y = train_data$mpg)
 print(proc.time()[3] - start)
-print(summary(ridge_model$model))
-print(confint(ridge_model$model))
-#print(simulate(ridge_model, newdata = test_data))
+print(summary(fit_model$model))
+print(confint(fit_model$model))
+#print(simulate(fit_model, newdata = test_data))
 ```
 
 ## Make predictions
 ```{r eval=TRUE}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
+ridge_pred <- predict(fit_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
 ```
 
 ## Compare predictions
@@ -113,7 +113,7 @@ abline(0, 1, col="red", lty=2)  # Add diagonal line
 # Add simulation plot
 par(mfrow=c(1,1))
 # Generate 100 simulations
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+sims <- simulate(fit_model, newdata = as.matrix(test_data), nsim = 500)
 # Plot simulations
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
@@ -146,17 +146,17 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-14]), y = train_data$medv)
+fit_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-14]), y = train_data$medv)
 print(proc.time()[3] - start)
-print(summary(ridge_model$model))
-print(confint(ridge_model$model))
-#print(simulate(ridge_model, newdata = test_data))
+print(summary(fit_model$model))
+print(confint(fit_model$model))
+#print(simulate(fit_model, newdata = test_data))
 ```
 
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
+ridge_pred <- predict(fit_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
 
 results <- data.frame(
   Actual = Boston[-train_idx, ]$medv,
@@ -219,7 +219,7 @@ abline(0, 1, col="red", lty=2)
 
 # Add simulation plot
 par(mfrow=c(1,1))
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+sims <- simulate(fit_model, newdata = as.matrix(test_data), nsim = 500)
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
         xlab = "obs. #", ylab = "Simulated Median Value",
@@ -250,17 +250,17 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-7]), y = train_data$Employed)
+fit_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-7]), y = train_data$Employed)
 print(proc.time()[3] - start)
-print(summary(ridge_model$model))
-print(confint(ridge_model$model))
-#print(simulate(ridge_model, newdata = test_data))
+print(summary(fit_model$model))
+print(confint(fit_model$model))
+#print(simulate(fit_model, newdata = test_data))
 ```
 
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
+ridge_pred <- predict(fit_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
 
 results <- data.frame(
   Actual = longley[-train_idx, ]$Employed,
@@ -323,7 +323,7 @@ abline(0, 1, col="red", lty=2)
 
 # Add simulation plot
 par(mfrow=c(1,1))
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+sims <- simulate(fit_model, newdata = as.matrix(test_data), nsim = 500)
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
         xlab = "obs. #", ylab = "Simulated Employment",
@@ -354,17 +354,17 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-16]), y = train_data$y)
+fit_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-16]), y = train_data$y)
 print(proc.time()[3] - start)
-print(summary(ridge_model$model))
-print(confint(ridge_model$model))
-#print(simulate(ridge_model, newdata = test_data))
+print(summary(fit_model$model))
+print(confint(fit_model$model))
+#print(simulate(fit_model, newdata = test_data))
 ```
 
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
+ridge_pred <- predict(fit_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
 
 results <- data.frame(
   Actual = UScrime[-train_idx, ]$y,
@@ -427,7 +427,7 @@ abline(0, 1, col="red", lty=2)
 
 # Add simulation plot
 par(mfrow=c(1,1))
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+sims <- simulate(fit_model, newdata = as.matrix(test_data), nsim = 500)
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
         xlab = "obs. #", ylab = "Simulated Crime Rate",
@@ -467,18 +467,18 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
+fit_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
                                y = train_data$Price)
 print(proc.time()[3] - start)
-print(summary(ridge_model$model))
-print(confint(ridge_model$model))
-#print(simulate(ridge_model, newdata = as.matrix(test_data)))
+print(summary(fit_model$model))
+print(confint(fit_model$model))
+#print(simulate(fit_model, newdata = as.matrix(test_data)))
 ```
 
 ## Make predictions and compare
 ```{r eval=TRUE, fig.width=7.5}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
+ridge_pred <- predict(fit_model, newdata = as.matrix(test_data), method="surrogate", interval = "prediction")
 
 results <- data.frame(
   Actual = car_data[-train_idx, "Price"],
@@ -541,7 +541,7 @@ abline(0, 1, col="red", lty=2)
 
 # Add simulation plot
 par(mfrow=c(1,1))
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500)
+sims <- simulate(fit_model, newdata = as.matrix(test_data), nsim = 500)
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
         xlab = "obs. #", ylab = "Simulated Price ($1000s)",

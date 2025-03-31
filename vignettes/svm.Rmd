@@ -41,17 +41,17 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
+svm_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-1]), y = train_data$mpg, engine = glmGamma)
 print(proc.time()[3] - start)
-print(summary(ridge_model$model))
-#print(confint(ridge_model$model))
-#print(simulate(ridge_model, newdata = test_data))
+print(summary(svm_model$model))
+#print(confint(svm_model$model))
+#print(simulate(svm_model, newdata = test_data))
 ```
 
 ## Make predictions
 ```{r eval=TRUE}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
+svm_pred <- predict(svm_model, newdata = as.matrix(test_data), method="bootstrap")
 ```
 
 ## Compare predictions
@@ -61,9 +61,9 @@ results <- data.frame(
   LM_Pred = lm_pred[,"fit"],
   LM_Lower = lm_pred[,"lwr"],
   LM_Upper = lm_pred[,"upr"],
-  Ridge_Pred = ridge_pred[,"fit"],
-  Ridge_Lower = ridge_pred[,"lwr"], 
-  Ridge_Upper = ridge_pred[,"upr"]
+  svm_Pred = svm_pred[,"fit"],
+  svm_Lower = svm_pred[,"lwr"], 
+  svm_Upper = svm_pred[,"upr"]
 )
 
 # Print results
@@ -73,21 +73,21 @@ print(head(results))
 # Calculate coverage and Winkler scores
 lm_coverage <- mean(mtcars[-train_idx, ]$mpg >= results$LM_Lower & 
                    mtcars[-train_idx, ]$mpg <= results$LM_Upper)
-ridge_coverage <- mean(mtcars[-train_idx, ]$mpg >= results$Ridge_Lower & 
-                      mtcars[-train_idx, ]$mpg <= results$Ridge_Upper)
+svm_coverage <- mean(mtcars[-train_idx, ]$mpg >= results$svm_Lower & 
+                      mtcars[-train_idx, ]$mpg <= results$svm_Upper)
 
 lm_winkler <- misc::winkler_score(mtcars[-train_idx, ]$mpg, results$LM_Lower, results$LM_Upper)
-ridge_winkler <- misc::winkler_score(mtcars[-train_idx, ]$mpg, results$Ridge_Lower, results$Ridge_Upper)
+svm_winkler <- misc::winkler_score(mtcars[-train_idx, ]$mpg, results$svm_Lower, results$svm_Upper)
 
 print(sprintf("\nPrediction interval metrics:"))
 print(sprintf("Linear Model: %.1f%% coverage, %.3f Winkler score", 
               100 * lm_coverage, mean(lm_winkler)))
 print(sprintf("Calibrated Model: %.1f%% coverage, %.3f Winkler score", 
-              100 * ridge_coverage, mean(ridge_winkler)))
+              100 * svm_coverage, mean(svm_winkler)))
 ```
 
 ```{r eval=TRUE, fig.width=7.5}
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500, method="bootstrap")
+sims <- simulate(svm_model, newdata = as.matrix(test_data), nsim = 500, method="bootstrap")
 # Plot simulations
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
@@ -120,14 +120,14 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
+svm_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-14]), y = train_data$medv, engine = glmGamma)
 print(proc.time()[3] - start)
-print(summary(ridge_model$model))
-#print(confint(ridge_model$model))
-#print(simulate(ridge_model, newdata = test_data))
+print(summary(svm_model$model))
+#print(confint(svm_model$model))
+#print(simulate(svm_model, newdata = test_data))
 
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
+svm_pred <- predict(svm_model, newdata = as.matrix(test_data), method="bootstrap")
 ```
 
 ## Make predictions and compare
@@ -138,9 +138,9 @@ results <- data.frame(
   LM_Pred = lm_pred[,"fit"],
   LM_Lower = lm_pred[,"lwr"],
   LM_Upper = lm_pred[,"upr"],
-  Ridge_Pred = ridge_pred[,"fit"],
-  Ridge_Lower = ridge_pred[,"lwr"], 
-  Ridge_Upper = ridge_pred[,"upr"]
+  svm_Pred = svm_pred[,"fit"],
+  svm_Lower = svm_pred[,"lwr"], 
+  svm_Upper = svm_pred[,"upr"]
 )
 
 # Print results
@@ -150,21 +150,21 @@ print(head(results))
 # Calculate coverage and Winkler scores
 lm_coverage <- mean(Boston[-train_idx, ]$medv >= results$LM_Lower & 
                    Boston[-train_idx, ]$medv <= results$LM_Upper)
-ridge_coverage <- mean(Boston[-train_idx, ]$medv >= results$Ridge_Lower & 
-                      Boston[-train_idx, ]$medv <= results$Ridge_Upper)
+svm_coverage <- mean(Boston[-train_idx, ]$medv >= results$svm_Lower & 
+                      Boston[-train_idx, ]$medv <= results$svm_Upper)
 
 lm_winkler <- misc::winkler_score(Boston[-train_idx, ]$medv, results$LM_Lower, results$LM_Upper)
-ridge_winkler <- misc::winkler_score(Boston[-train_idx, ]$medv, results$Ridge_Lower, results$Ridge_Upper)
+svm_winkler <- misc::winkler_score(Boston[-train_idx, ]$medv, results$svm_Lower, results$svm_Upper)
 
 print(sprintf("\nPrediction interval metrics:"))
 print(sprintf("Linear Model: %.1f%% coverage, %.3f Winkler score", 
               100 * lm_coverage, mean(lm_winkler)))
 print(sprintf("Calibrated Model: %.1f%% coverage, %.3f Winkler score", 
-              100 * ridge_coverage, mean(ridge_winkler)))
+              100 * svm_coverage, mean(svm_winkler)))
 ```
 
 ```{r eval=TRUE, fig.width=7.5}
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500, method="bootstrap")
+sims <- simulate(svm_model, newdata = as.matrix(test_data), nsim = 500, method="bootstrap")
 # Plot simulations
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,
@@ -205,15 +205,15 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), X = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
+svm_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-which(names(train_data) == "Price")]), 
                                y = train_data$Price, engine = glmGamma)
 print(proc.time()[3] - start)
-print(summary(ridge_model$model))
-#print(confint(ridge_model$model))
-#print(simulate(ridge_model, newdata = as.matrix(test_data)))
+print(summary(svm_model$model))
+#print(confint(svm_model$model))
+#print(simulate(svm_model, newdata = as.matrix(test_data)))
 
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")
-ridge_pred <- predict(ridge_model, newdata = as.matrix(test_data), method="bootstrap")
+svm_pred <- predict(svm_model, newdata = as.matrix(test_data), method="bootstrap")
 ```
 
 ## Make predictions and compare
@@ -224,9 +224,9 @@ results <- data.frame(
   LM_Pred = lm_pred[,"fit"],
   LM_Lower = lm_pred[,"lwr"],
   LM_Upper = lm_pred[,"upr"],
-  Ridge_Pred = ridge_pred[,"fit"],
-  Ridge_Lower = ridge_pred[,"lwr"], 
-  Ridge_Upper = ridge_pred[,"upr"]
+  svm_Pred = svm_pred[,"fit"],
+  svm_Lower = svm_pred[,"lwr"], 
+  svm_Upper = svm_pred[,"upr"]
 )
 
 # Print results
@@ -236,21 +236,21 @@ print(results)
 # Calculate coverage and Winkler scores
 lm_coverage <- mean(car_data[-train_idx, "Price"] >= results$LM_Lower & 
                    car_data[-train_idx, "Price"] <= results$LM_Upper)
-ridge_coverage <- mean(car_data[-train_idx, "Price"] >= results$Ridge_Lower & 
-                      car_data[-train_idx, "Price"] <= results$Ridge_Upper)
+svm_coverage <- mean(car_data[-train_idx, "Price"] >= results$svm_Lower & 
+                      car_data[-train_idx, "Price"] <= results$svm_Upper)
 
 lm_winkler <- misc::winkler_score(car_data[-train_idx, "Price"], results$LM_Lower, results$LM_Upper)
-ridge_winkler <- misc::winkler_score(car_data[-train_idx, "Price"], results$Ridge_Lower, results$Ridge_Upper)
+svm_winkler <- misc::winkler_score(car_data[-train_idx, "Price"], results$svm_Lower, results$svm_Upper)
 
 print(sprintf("\nPrediction interval metrics:"))
 print(sprintf("Linear Model: %.1f%% coverage, %.3f Winkler score", 
               100 * lm_coverage, mean(lm_winkler)))
 print(sprintf("Calibrated Model: %.1f%% coverage, %.3f Winkler score", 
-              100 * ridge_coverage, mean(ridge_winkler)))
+              100 * svm_coverage, mean(svm_winkler)))
 ```
 
 ```{r eval=TRUE, fig.width=7.5}
-sims <- simulate(ridge_model, newdata = as.matrix(test_data), nsim = 500, method="bootstrap")
+sims <- simulate(svm_model, newdata = as.matrix(test_data), nsim = 500, method="bootstrap")
 # Plot simulations
 matplot(sims, type = "l", 
         col = rgb(0, 0, 1, 0.1), lty = 1,

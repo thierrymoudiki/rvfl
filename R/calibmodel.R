@@ -1,9 +1,9 @@
 #' @export
-calibmodel <- function(X, y, engine=stats::lm, lambda=NULL, positive_response=FALSE, seed=123, ...) {
+calibmodel <- function(x, y, engine=stats::lm, lambda=NULL, positive_response=FALSE, seed=123, ...) {
   set.seed(seed) 
   if (!is.null(lambda)) {
     if (length(lambda) > 1){
-      lambda <- select_ridge_lambda(X, y, lambda)$lambda.min
+      lambda <- select_ridge_lambda(x, y, lambda)$lambda.min
     }
     sqrt_lambda <- sqrt(lambda)    
   }   
@@ -11,55 +11,54 @@ calibmodel <- function(X, y, engine=stats::lm, lambda=NULL, positive_response=FA
     stop("Positive response is set to TRUE but some values of y are negative")
   }
   y_mean <- 0 # keep this that way 
-  X_mean <- colMeans(X)
-  X_sd <- apply(X, 2, sd)
-  X_scaled <- scale(X, center=X_mean, scale=X_sd)
+  x_mean <- colMeans(x)
+  x_sd <- apply(x, 2, sd)
+  x_scaled <- scale(x, center=x_mean, scale=x_sd)
   if (positive_response == FALSE) {
     y_mean <- mean(y)
     response <- y - y_mean
   } else {
     response <- y
   }
-  p <- ncol(X)
+  p <- ncol(x)
   # Obtain calibration residuals
   # Split data into calibration and training sets
   train_idx <- as.integer(create_data_partition(response, p=0.5)[[1]])
-  X_train <- X_scaled[train_idx, ]
+  x_train <- x_scaled[train_idx, ]
   y_train <- response[train_idx]
-  X_calib <- X_scaled[-train_idx, ]
+  x_calib <- x_scaled[-train_idx, ]
   y_calib <- response[-train_idx]                
   # Fit model on training data with augmented matrices
   if (!is.null(lambda) || positive_response == FALSE) {
     diag_sqrt_lambda <- diag(sqrt_lambda, p, p)
-    Z_train <- rbind(X_train, diag_sqrt_lambda)
+    z_train <- rbind(x_train, diag_sqrt_lambda)
     rep_0_p <- rep(0, p)
     y_train_aug <- c(y_train, rep_0_p)
-    df_train <- data.frame(y=y_train_aug, as.data.frame(Z_train))
-    df_calib <- data.frame(y=y_calib, as.data.frame(X_calib))
+    df_train <- data.frame(y=y_train_aug, as.data.frame(z_train))
     object <- engine(y ~ . -1, data=df_train, ...)     
     # Get calibration residuals
-    calib_pred <- try(predict(object, as.data.frame(X_calib)), silent=TRUE)
+    calib_pred <- try(predict(object, as.data.frame(x_calib)), silent=TRUE)
     if (inherits(calib_pred, "try-error")) {
-      calib_pred <- predict(object, as.matrix(X_calib))
+      calib_pred <- predict(object, as.matrix(x_calib))
     }
     calib_resid <- y_calib - calib_pred           
   } else { # positive response and no lambda
-    df_train <- data.frame(y=y_train, as.data.frame(X_train))
-    df_calib <- data.frame(y=y_calib, as.data.frame(X_calib))
+    df_train <- data.frame(y=y_train, as.data.frame(x_train))
+    df_calib <- data.frame(y=y_calib, as.data.frame(x_calib))
     object <- engine(y ~ ., data=df_train, ...)
-    calib_pred <- try(predict(object, as.data.frame(X_calib)), silent=TRUE)
+    calib_pred <- try(predict(object, as.data.frame(x_calib)), silent=TRUE)
     if (inherits(calib_pred, "try-error")) {
-      calib_pred <- predict(object, as.matrix(X_calib))
+      calib_pred <- predict(object, as.matrix(x_calib))
     }
     calib_resid <- y_calib/calib_pred           
   }    
   # Store calibration residuals
-  fit_obj <- vector("list", 6)
+  fit_obj <- list()
   fit_obj$positive_response <- positive_response
   fit_obj$residuals <- drop(calib_resid)
   fit_obj$y_mean <- y_mean
-  fit_obj$X_mean <- X_mean
-  fit_obj$X_sd <- X_sd
+  fit_obj$x_mean <- x_mean
+  fit_obj$x_sd <- x_sd
   fit_obj$model <- object
   class(fit_obj) <- c("calibmodel", class(object))
   return(fit_obj)
@@ -68,47 +67,60 @@ calibmodel <- function(X, y, engine=stats::lm, lambda=NULL, positive_response=FA
 #' @export
 predict.calibmodel <- function(object, newdata, 
                                method=c("none", "gaussian", "surrogate", 
-                               "bootstrap", "tsbootstrap"), 
-                               level=95, nsim=100, seed=123, ...) {
+                               "bootstrap", "tsbootstrap", "splitconformal"), 
+                               level=95, nsim=250L, seed=123, ...) {
   set.seed(seed)
   method <- match.arg(method)
     # Convert newdata to matrix if it isn't already
     if (!is.matrix(newdata)) newdata <- as.matrix(newdata)
     # Check dimensions
-    if (length(object$X_mean) != ncol(newdata)) {
+    if (length(object$x_mean) != ncol(newdata)) {
       stop("Number of variables in newdata (", ncol(newdata), 
-           ") must match the training data (", length(object$X_mean), ")")
+           ") must match the training data (", length(object$x_mean), ")")
     }
     # Scale new data using training scaling parameters
     newdata_scaled <- scale(newdata, 
-                            center = object$X_mean,
-                            scale = object$X_sd)
+                            center = object$x_mean,
+                            scale = object$x_sd)
     # Convert to data frame and add column names if missing
     newdata_df <- as.data.frame(newdata_scaled)
     if (is.null(colnames(newdata_df))) {
       colnames(newdata_df) <- paste0("V", seq_len(ncol(newdata_df)))
     }
     # Use predict on the underlying model
-    pred <- try(predict(object$model, newdata = newdata_df, ...), silent=TRUE) + object$y_mean
+    pred <- try(predict(object$model, newdata = newdata_df, ...), silent=TRUE) 
     if (inherits(pred, "try-error")) {
       pred <- predict(object$model, as.matrix(newdata_df), ...) + object$y_mean
+    } else {
+      pred <- pred + object$y_mean
     }
     # Get point predictions
     if (method == "none") {  
       return(drop(pred))
     } else {
-      # Generate simulations
-      sims <- simulate.calibmodel(object, newdata = newdata, nsim = nsim, 
-                                  method = method, seed = seed)            
-      # Calculate prediction intervals using empirical quantiles
-      alpha <- (1 - level/100) / 2
-      pred <- apply(sims, 1, median)
-      lower <- apply(sims, 1, quantile, probs = alpha)
-      upper <- apply(sims, 1, quantile, probs = 1 - alpha)            
-      # Return as matrix with columns fit, lwr, upr
-      return(cbind(fit = drop(pred), 
-                   lwr = lower,
-                   upr = upper))
+      if (method != "splitconformal")
+      {
+        # Generate simulations
+        sims <- simulate.calibmodel(object, newdata = newdata, nsim = nsim, 
+                                    method = method, seed = seed)            
+        # Calculate prediction intervals using empirical quantiles
+        alpha <- (1 - level/100) / 2
+        pred <- apply(sims, 1, median)
+        lower <- apply(sims, 1, quantile, probs = alpha)
+        upper <- apply(sims, 1, quantile, probs = 1 - alpha)            
+        # Return as matrix with columns fit, lwr, upr
+        return(cbind(fit = drop(pred), 
+                    lwr = lower,
+                    upr = upper))
+      } else {
+        multiplier <- quantile(abs(object$residuals), probs = 95/100)
+        pred <- drop(pred)
+        lower <- pred - multiplier
+        upper <- pred + multiplier
+        return(cbind(fit = drop(pred), 
+                    lwr = lower,
+                    upr = upper))
+      }      
     }
   }
 
@@ -126,8 +138,8 @@ simulate.calibmodel <- function(object, newdata, nsim = 100,
   method <- match.arg(method)
   # Scale newdata
   newdata_scaled <- scale(as.matrix(newdata), 
-                          center = object$X_mean,
-                          scale = object$X_sd)
+                          center = object$x_mean,
+                          scale = object$x_sd)
   # Try prediction with data frame first
   pred <- try(drop(predict(object$model, as.data.frame(newdata_scaled))), silent = TRUE) + object$y_mean
   if (inherits(pred, "try-error")) {
@@ -185,12 +197,12 @@ simulate.calibmodel <- function(object, newdata, nsim = 100,
 #' @export
 calibmodel.formula <- function(formula, data, engine=stats::lm, 
                                lambda=0.1, seed=123, ...) {
-  # Extract X matrix and y vector from formula and data
+  # Extract x matrix and y vector from formula and data
   mf <- model.frame(formula, data)
   y <- model.response(mf)
-  X <- model.matrix(formula, data)[,-1, drop=FALSE]  # Remove intercept column  
+  x <- model.matrix(formula, data)[,-1, drop=FALSE]  # Remove intercept column  
   # Call the original caliblm function
-  result <- rvfl::calibmodel(X, y, engine=engine, 
+  result <- rvfl::calibmodel(x, y, engine=engine, 
                              lambda=lambda, seed=seed, ...)  
   # Add formula-related attributes
   result$call <- match.call()
@@ -206,21 +218,21 @@ summary.calibmodel <- function(object, newdata=NULL) {
   orig_summary <- summary(object$model)  
   # Calculate numerical derivatives
   if (is.null(newdata)) {
-    X <- model.matrix(object$model)
+    x <- model.matrix(object$model)
   } else {
-    X <- model.matrix(object$model, newdata)
+    x <- model.matrix(object$model, newdata)
   }
   y <- model.response(model.frame(object$model))
-  n <- nrow(X)
-  p <- ncol(X)
+  n <- nrow(x)
+  p <- ncol(x)
   h <- 1e-5  # Small step size for numerical derivatives  
   # Initialize matrices for derivatives
   derivatives <- matrix(0, nrow=n, ncol=p)  
-  colnames(derivatives) <- colnames(X)
+  colnames(derivatives) <- colnames(x)
   # Calculate derivatives for each predictor
   for(j in 1:p) {
-    X_plus <- X
-    X_minus <- X
+    X_plus <- x
+    X_minus <- x
     X_plus[,j] <- X_plus[,j] + h
     X_minus[,j] <- X_minus[,j] - h    
     pred_plus <- predict(object, X_plus)
@@ -232,7 +244,7 @@ summary.calibmodel <- function(object, newdata=NULL) {
   se_effects <- apply(derivatives, 2, sd)/sqrt(n)
   
   # Perform t-tests for each predictor
-  t_test_results <- try(apply(derivatives, 2, function(x) {
+  t_test_results <- apply(derivatives, 2, function(x) {
     test <- t.test(x)
     c(
       Effect = test$estimate,
@@ -241,12 +253,12 @@ summary.calibmodel <- function(object, newdata=NULL) {
       CI.lower = test$conf.int[1],
       CI.upper = test$conf.int[2]
     )
-  }), silent=TRUE)
-  if (inherits(t_test_results, "try-error")) {
-    t_test_results <- apply(derivatives, 2, summary)
-  }
+  })
+  
   # Create numerical derivatives summary table
-  deriv_summary <- as.data.frame(t_test_results)      
+  deriv_summary <- as.data.frame(t(t_test_results))
+  rownames(deriv_summary) <- colnames(x)
+  
   # Return both summaries
   list(
     model_summary = orig_summary,
@@ -260,21 +272,31 @@ plot.calibmodel <- function(object) {
 }
 
 #' @export
-select_ridge_lambda <- function(X, y, lambda_seq = 10**seq(-10, 10, length.out=100), seed = 123) {
-  # Ensure X is a matrix and y is a vector
-  X <- as.matrix(X)
+residuals.calibmodel <- function(object) {
+  return(residuals(object$model))
+}
+
+#' @export
+fitted.calibmodel <- function(object) {
+  return(fitted(object$model))
+}
+
+#' @export
+select_ridge_lambda <- function(x, y, lambda_seq = 10**seq(-10, 10, length.out=100), seed = 123) {
+  # Ensure x is a matrix and y is a vector
+  x <- as.matrix(x)
   y <- as.vector(y)
   
-  # Center and scale X and y
+  # Center and scale x and y
   y_mean <- mean(y)
-  X_mean <- colMeans(X)
-  X_sd <- apply(X, 2, sd)
-  X_scaled <- scale(X, center = X_mean, scale = X_sd)
+  x_mean <- colMeans(x)
+  x_sd <- apply(x, 2, sd)
+  X_scaled <- scale(x, center = x_mean, scale = x_sd)
   y <- y - y_mean
-  n <- nrow(X)
-  p <- ncol(X)
+  n <- nrow(x)
+  p <- ncol(x)
   
-  # Calculate SVD of X once
+  # Calculate SVD of x once
   svd_X <- svd(X_scaled)
   d <- svd_X$d
   U <- svd_X$u

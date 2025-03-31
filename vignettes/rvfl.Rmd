@@ -34,7 +34,7 @@ print(confint(lm_model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::rvfl(X = as.matrix(train_data[,-1]), y = train_data$mpg)
+ridge_model <- rvfl::rvfl(x = as.matrix(train_data[,-1]), y = train_data$mpg)
 print(proc.time()[3] - start)
 print(summary(ridge_model$model))
 print(confint(ridge_model$model))
@@ -141,14 +141,14 @@ test_data <- Boston[-train_idx, -14]  # -14 removes 'medv' (target variable)
 ```{r}
 # Fit regular linear model
 start <- proc.time()[3]
-lm_model <- rvfl::rvfl(X = as.matrix(train_data[,-14]), y = train_data$medv, activ = "linear")#lm(medv ~ ., data = train_data)
+lm_model <- rvfl::rvfl(x = as.matrix(train_data[,-14]), y = train_data$medv, activ = "linear")#lm(medv ~ ., data = train_data)
 print(proc.time()[3] - start)
 print(summary(lm_model$model))
 print(confint(lm_model$model))
 
 # Fit calibrated model 
 start <- proc.time()[3]
-ridge_model <- rvfl::rvfl(X = as.matrix(train_data[,-14]), y = train_data$medv)
+ridge_model <- rvfl::rvfl(x = as.matrix(train_data[,-14]), y = train_data$medv)
 print(proc.time()[3] - start)
 print(summary(ridge_model$model))
 print(confint(ridge_model$model))
@@ -237,9 +237,9 @@ lines(Boston[-train_idx, ]$medv, col = "red")
 par(mfrow=c(2,2), mar=c(4,4,2,1))  # Bottom, left, top, right margins
 
 # Fit models with different activation functions
-ridge_relu <- rvfl::rvfl(X = as.matrix(train_data[,-14]), y = train_data$medv, activ = "relu")
-ridge_sigmoid <- rvfl::rvfl(X = as.matrix(train_data[,-14]), y = train_data$medv, activ = "sigmoid")
-ridge_tanh <- rvfl::rvfl(X = as.matrix(train_data[,-14]), y = train_data$medv, activ = "tanh")
+ridge_relu <- rvfl::rvfl(x = as.matrix(train_data[,-14]), y = train_data$medv, activ = "relu")
+ridge_sigmoid <- rvfl::rvfl(x = as.matrix(train_data[,-14]), y = train_data$medv, activ = "sigmoid")
+ridge_tanh <- rvfl::rvfl(x = as.matrix(train_data[,-14]), y = train_data$medv, activ = "tanh")
 
 # Make predictions
 relu_pred <- predict(ridge_relu, newdata = as.matrix(test_data), method = "gaussian")
