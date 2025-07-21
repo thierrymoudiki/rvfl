@@ -61,14 +61,14 @@ predict.rvfl <- function(object, newdata,
   if (!is.matrix(newdata) && !is.data.frame(newdata)) {
     newdata <- as.matrix(newdata)
   }  
-  ##misc::debug_print(newdata)
+  misc::debug_print(newdata)
   # Create hidden features with error checking
   #tryCatch({
   new_predictors <- create_new_predictors(newdata, 
-                                        nb_hidden = object$n_hidden_features,
-                                        nodes_sim = object$nodes_sim,
-                                        activ = object$activ)    
-  ##misc::debug_print(new_predictors)                                      
+                                          nb_hidden = object$n_hidden_features,
+                                          nodes_sim = object$nodes_sim,
+                                          activ = object$activ)    
+  misc::debug_print(new_predictors)                                      
   # Validate the created features
   if (any(is.na(new_predictors$predictors))) {
     stop("Hidden features contain NA/NaN values")

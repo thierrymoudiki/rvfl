@@ -57,29 +57,37 @@ is.wholenumber <-
 
 my_sd <- function(x) {
   n <- dim(x)[1]
-  return(drop(rep(1 / (n - 1), n) %*% (x - tcrossprod(
+  res <- drop(rep(1 / (n - 1), n) %*% (x - tcrossprod(
     rep.int(1, n), colMeans(x)
-  )) ^ 2) ^ 0.5)
+  )) ^ 2) ^ 0.5
+  if (any(is.na(res)))
+  {
+    return (rep(1, n))
+  }
+  return (res)
 }
 my_sd <- compiler::cmpfun(my_sd)
 
 my_scale <- function(x, xm = NULL, xsd = NULL) {
   rep_1_n <- rep.int(1, dim(x)[1])
-  
+  misc::debug_print(xm)
+  misc::debug_print(xsd)
   # centering and scaling, returning the means and sd's
   if (is.null(xm) && is.null(xsd)) {
     xm <- colMeans(x)
     xsd <- my_sd(x)
     return(list(
-      res = (x - tcrossprod(rep_1_n, xm)) / tcrossprod(rep_1_n, xsd),
+      res = (x - tcrossprod(rep_1_n, xm))/tcrossprod(rep_1_n, xsd),
       xm = xm,
       xsd = xsd
     ))
   }
   
   # centering and scaling
+  misc::debug_print(xm)
+  misc::debug_print(xsd)
   if (is.numeric(xm) && is.numeric(xsd)) {
-    return((x - tcrossprod(rep_1_n, xm)) / tcrossprod(rep_1_n, xsd))
+    return((x - tcrossprod(rep_1_n, xm))/tcrossprod(rep_1_n, xsd))
   }
   
   # centering only

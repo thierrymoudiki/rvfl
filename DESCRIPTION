@@ -1,12 +1,13 @@
 Package: rvfl
 Title: Random Vector Functional Link Networks
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person("T.", "Moudiki", , "thierry.moudiki@gmail.com", role = c("aut", "cre"))
 Description: Random Vector Functional Link Networks.
 License: License: BSD_3_clause Clear + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-Suggests: knitr, MASS, e1071, pscl, randomForest, forecast 
+Suggests: knitr, MASS, e1071, pscl, randomForest, forecast, misc
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
+Remotes: thierrymoudiki/misc

@@ -1,0 +1,37 @@
+---
+title: "RVFL model for univariate time series"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{RVFL model for univariate time series}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+library(rvfl)
+```
+
+
+```{r}
+plot(rvfl::tsrvflf(WWWusage))
+```
+
+```{r}
+plot(rvfl::tsrvflf(USAccDeaths))
+```
+
+```{r}
+plot(rvfl::tsrvflf(fdeaths))
+```
+
+```{r}
+plot(rvfl::tsrvflf(mdeaths))
+```
+
+```{r}
+plot(rvfl::tsrvflf(ldeaths))
+```
+
+```{r}
+plot(rvfl::tsrvflf(nile))
+```

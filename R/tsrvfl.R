@@ -19,10 +19,9 @@
 #'
 #' @return An object of class "forecast" containing the fitted model and forecasts
 #'
-#' @examples
-#' y <- ts(rnorm(120,0,3) + 1:120 + 20*sin(2*pi*(1:120)/12), frequency=12)
-#' fit <- tsrvflf(y, h=20)
-#' #plot(fit)
+#' @export
+#'
+#' plot(rvfl::tsrvflf(AirPassengers))
 #'
 tsrvflf <- function(y, h = 5, 
                     lags = 15L,                
@@ -62,35 +61,29 @@ tsrvflf <- function(y, h = 5,
                             h = length(y_calib), 
                             lags=lags, 
                             fit_func = fit_func,
-                            predict_func = predict.rvfl,
+                            predict_func = predict,
                             coeffs = coeffs,
-                            ...)$mean
-  #misc::debug_print(y_calib)
-  #misc::debug_print(y_pred_calibration)
+                            ...)$mean                            
   preds_obj <- ml_forecast(y = y_calib, 
                            h = h,  
                            lags = lags, 
                            fit_func = fit_func,
-                           predict_func = predict.rvfl,
+                           predict_func = predict,
                            coeffs = coeffs,
                            ...) 
-  #misc::debug_print(preds_obj)
+  
   preds <- preds_obj$mean
 
   tspx <- tsp(y_calib)
   start_preds <- tspx[2] + 1 / tspx[3]                         
   matrix_preds <- replicate(B, preds)     
-  #misc::debug_print(y_calib)
-  #misc::debug_print(y_pred_calibration)
   calibrated_raw_residuals <- y_calib - y_pred_calibration
-  #misc::debug_print(calibrated_raw_residuals)
   scaled_calib_resids <- base::scale(calibrated_raw_residuals)
   xm <- attr(scaled_calib_resids, "scaled:center")
   xsd <- attr(scaled_calib_resids, "scaled:scale")
   scaled_calibrated_residuals <- base::scale(calibrated_raw_residuals,
                                              center = TRUE,
                                              scale = TRUE)
-  #misc::debug_print(scaled_calibrated_residuals)
   if (type_pi == "kde") {        
         simulated_scaled_calibrated_residuals <-
             rgaussiandens(
@@ -190,95 +183,93 @@ tsrvflf <- function(y, h = 5,
 
 ml_forecast <- function(y, h, 
                         lags=1, 
-                        fit_func = rvfl::rvfl,
-                        predict_func = predict.rvfl,
+                        fit_func = ahead::ridge,
+                        predict_func = predict,
+                        xreg = NULL, 
                         coeffs = NULL, 
                         ...)
-{
-    df <- as.data.frame(embed(rev(as.numeric(y)), lags + 1L))
-    ncol_df <- ncol(df)
-    colnames(df) <- c(paste0("lag", rev(seq_len(lags))), "y") 
-    
-    if(is.null(coeffs))
-    {            
-      # Fit model using formula interface
-      fit <- try({
-          model <- fit_func(y ~ ., data = df, ...)
-          if (is.null(model$coefficients) && is.null(model$model)) {
-              stop("Model fitting failed")
-          }
-          model
-      }, silent=TRUE)
-      
-      if (inherits(fit, "try-error"))
-      {
-          # Try matrix interface if formula interface fails
-          x_matrix <- as.matrix(df)[, -ncol_df]
-          y_vector <- df$y
-          fit <- try({
-              model <- fit_func(x = x_matrix, y = y_vector, ...)
-              if (is.null(model$coefficients) && is.null(model$model)) {
-                  stop("Model fitting failed")
-              }
-              model
-          }, silent=TRUE)
-          
-          if (inherits(fit, "try-error")) {
-              stop("Both formula and matrix interfaces failed to fit model")
-          }
-      }
-      
-      # Get the most recent lags and their differences
-      latest_lags <- rev(as.numeric(y)[1:lags])
-      last_diff <- diff(tail(y, 2))[1]
-      
-      predictions <- numeric(h)
-      for (i in 1:h)
-      {
-          # Create prediction data frame
-          newdata <- data.frame(matrix(latest_lags, nrow=1))
-          colnames(newdata) <- paste0("lag", rev(seq_len(lags)))
-          
-          # Make prediction
-          pred <- try({
-              if (inherits(fit, "lm")) {
-                  predict(fit, newdata)
-              } else {
-                  predict_func(fit, as.matrix(newdata))
-              }
-          }, silent=TRUE)
-          
-          if (inherits(pred, "try-error") || is.na(pred)) {
-              warning("Prediction error at step ", i)
-              # Instead of using mean, extrapolate using last difference
-              predictions[i] <- latest_lags[1] + last_diff
-          } else {
-              predictions[i] <- as.numeric(pred)[1]
-          }
-          
-          # Update lags for next prediction
-          if (i < h) {
-              latest_lags <- c(latest_lags[-1], predictions[i])
-              # Update last_diff based on new prediction
-              last_diff <- predictions[i] - latest_lags[1]
-          }
-      }
-    } else {
-      latest_lags <- rev(as.numeric(y)[1:lags])
-      predictions <- numeric(h)
-      
-      for (i in 1:h)
-      {
-          newdata <- matrix(latest_lags, nrow=1)
-          colnames(newdata) <- paste0("lag", rev(seq_len(lags)))
-          
-          predictions[i] <- as.numeric(newdata %*% coeffs)
-          
-          if (i < h) {
-              latest_lags <- c(latest_lags[-1], predictions[i])
-          }
-      }
-    }    
-    
-    return(list(model = fit, mean = predictions))
+{  
+  df <- as.data.frame(embed(rev(as.numeric(y)), lags + 1L))
+  ncol_df <- ncol(df)
+  colnames(df) <- c(paste0("lag", rev(seq_len(lags))), "y")    
+ 
+  if (!is.null(xreg))
+  {
+    df_xreg <- as.data.frame(embed(rev(as.numeric(xreg)), lags + 1L))
+    ncol_df_xreg <- ncol(df_xreg)
+    colnames(df_xreg) <- c(paste0("xreg_lag", rev(seq_len(lags))), "xreg")    
+  }  else {
+    df_xreg <- NULL 
+  }
+ 
+  if (!is.null(xreg))
+  {
+    fit <- try(fit_func(y ~ ., data = cbind.data.frame(df, df_xreg), ...), silent=TRUE)
+    if (inherits(fit, "try-error"))
+    {      
+      idx_y <- which(colnames(df) == "y")
+      fit <- fit_func(x = cbind(as.matrix(df)[, -idx_y], as.matrix(df_xreg)), 
+                    y = df$y, ...)             
+    }
+  } else {
+    fit <- try(fit_func(y ~ ., data = df, ...), silent=TRUE)
+    if (inherits(fit, "try-error"))
+    {      
+      idx_y <- which(colnames(df) == "y")
+      fit <- fit_func(x = as.matrix(df)[, -idx_y], 
+                      y = df$y, ...)             
+    }
+  }
+  
+  forecasts <- numeric(h)
+  
+  # Convert to matrix once for faster operations
+  df_matrix <- as.matrix(df)
+  col_names <- colnames(df)
+
+  if (!is.null(xreg))
+  {
+    df_xreg_matrix <- as.matrix(df_xreg)
+    col_names_xreg <- colnames(df_xreg)
+  }
+
+  if (is.null(xreg))
+  {
+    for (i in 1:h)
+    {
+      # Extract newdata exactly as original
+      newdata <- matrix(df_matrix[1, (ncol_df-lags + 1):ncol_df], nrow=1)
+      colnames(newdata) <- paste0("lag", rev(seq_len(lags)))
+      misc::debug_print(newdata)
+      newdata_df <- data.frame(matrix(as.numeric((newdata)), ncol=lags))
+      colnames(newdata_df) <- paste0("lag", rev(seq_len(lags)))
+      misc::debug_print(newdata_df)
+      prediction <- as.numeric(predict_func(fit, newdata_df))
+      misc::debug_print(prediction)
+      forecasts[i] <- prediction
+      # Create new row and rbind to matrix (faster than data.frame rbind)
+      new_row <- c(as.numeric(newdata_df), prediction)
+      df_matrix <- rbind(new_row, df_matrix)
+    } 
+  } else {
+    for (i in 1:h)
+    {
+      # Extract newdata exactly as original      
+      newdata_y <- matrix(df_matrix[1, (ncol_df-lags + 1):ncol_df], nrow=1)
+      newdata <- cbind(newdata_y, 
+                       matrix(df_xreg_matrix[1, (ncol_df-lags):ncol_df], nrow=1))
+      colnames(newdata) <- c(paste0("lag", rev(seq_len(lags))), c(paste0("xreg_lag", rev(seq_len(lags))), "xreg")) 
+      newdata_y_df <- data.frame(matrix(as.numeric((newdata_y)), ncol=lags))    
+      colnames(newdata_y_df) <- paste0("lag", rev(seq_len(lags)))
+      newdata_df <- data.frame(matrix(as.numeric((newdata)), ncol=2*lags + 1))
+      colnames(newdata_df) <- c(paste0("lag", rev(seq_len(lags))), c(paste0("xreg_lag", rev(seq_len(lags))), "xreg"))
+      prediction <- as.numeric(predict_func(fit, newdata_df))
+      forecasts[i] <- prediction
+      # Create new row and rbind to matrix (faster than data.frame rbind)
+      new_row <- c(as.numeric(newdata_y_df), prediction)
+      df_matrix <- rbind(new_row, df_matrix)
+    }
+  }   
+  
+  return(list(model = fit, mean = forecasts))
 }

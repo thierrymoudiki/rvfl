@@ -55,9 +55,3 @@ An object of class "forecast" containing the fitted model and forecasts
 This function combines model fitting using tsrvfl() and forecasting in one step.
 It's a convenience wrapper that fits a model and immediately generates forecasts.
 }
-\examples{
-y <- ts(rnorm(120,0,3) + 1:120 + 20*sin(2*pi*(1:120)/12), frequency=12)
-fit <- tsrvflf(y, h=20)
-plot(fit)
-
-}
