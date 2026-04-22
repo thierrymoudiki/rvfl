@@ -50,6 +50,11 @@ print(confint(ridge_model$model))
 #print(simulate(ridge_model, newdata = test_data))
 ```
 
+```{r}
+(s <- summary(ridge_model))
+print(s$derivatives)
+```
+
 ## Make predictions
 ```{r eval=TRUE}
 lm_pred <- predict(lm_model, newdata = test_data, interval = "prediction")

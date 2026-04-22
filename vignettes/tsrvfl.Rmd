@@ -9,29 +9,22 @@ vignette: >
 
 ```{r}
 library(rvfl)
+require(glmnet)
+require(survival)
 ```
 
-
-```{r}
-plot(rvfl::tsrvflf(WWWusage))
+```{r, fig.width=6.5}
+plot(ahead::dynrmf(fit_func=rvfl::rvfl, y=fdeaths, engine=glmnet::cv.glmnet, h=20L))
 ```
 
-```{r}
-plot(rvfl::tsrvflf(USAccDeaths))
+```{r, fig.width=6.5}
+plot(ahead::dynrmf(fit_func=rvfl::rvfl, y=mdeaths, engine=glmnet::cv.glmnet, h=20L))
 ```
 
-```{r}
-plot(rvfl::tsrvflf(fdeaths))
+```{r, fig.width=6.5}
+plot(ahead::dynrmf(fit_func=rvfl::rvfl, y=ldeaths, engine=glmnet::cv.glmnet, h=20L))
 ```
 
-```{r}
-plot(rvfl::tsrvflf(mdeaths))
-```
-
-```{r}
-plot(rvfl::tsrvflf(ldeaths))
-```
-
-```{r}
-plot(rvfl::tsrvflf(nile))
+```{r, fig.width=6.5}
+plot(ahead::dynrmf(fit_func=rvfl::rvfl, y=Nile, engine=glmnet::cv.glmnet, h=20L))
 ```

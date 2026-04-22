@@ -2,7 +2,7 @@
 title: "Ridge model"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ridge model}
+  %\VignetteIndexEntry{Ridge model 3}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

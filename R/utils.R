@@ -70,8 +70,8 @@ my_sd <- compiler::cmpfun(my_sd)
 
 my_scale <- function(x, xm = NULL, xsd = NULL) {
   rep_1_n <- rep.int(1, dim(x)[1])
-  misc::debug_print(xm)
-  misc::debug_print(xsd)
+  #misc::debug_print(xm)
+  #misc::debug_print(xsd)
   # centering and scaling, returning the means and sd's
   if (is.null(xm) && is.null(xsd)) {
     xm <- colMeans(x)
@@ -84,8 +84,8 @@ my_scale <- function(x, xm = NULL, xsd = NULL) {
   }
   
   # centering and scaling
-  misc::debug_print(xm)
-  misc::debug_print(xsd)
+  #misc::debug_print(xm)
+  #misc::debug_print(xsd)
   if (is.numeric(xm) && is.numeric(xsd)) {
     return((x - tcrossprod(rep_1_n, xm))/tcrossprod(rep_1_n, xsd))
   }

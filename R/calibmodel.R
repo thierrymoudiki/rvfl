@@ -228,7 +228,8 @@ summary.calibmodel <- function(object, newdata=NULL) {
   h <- 1e-5  # Small step size for numerical derivatives  
   # Initialize matrices for derivatives
   derivatives <- matrix(0, nrow=n, ncol=p)  
-  colnames(derivatives) <- colnames(x)
+  if (!is.null(colnames(x)))
+    colnames(derivatives) <- colnames(x)
   # Calculate derivatives for each predictor
   for(j in 1:p) {
     X_plus <- x
@@ -239,6 +240,8 @@ summary.calibmodel <- function(object, newdata=NULL) {
     pred_minus <- predict(object, X_minus)    
     derivatives[,j] <- (pred_plus - pred_minus)/(2*h)
   }  
+
+  all_derivatives <- derivatives 
   # Calculate mean effects and standard errors
   mean_effects <- colMeans(derivatives)
   se_effects <- apply(derivatives, 2, sd)/sqrt(n)
@@ -262,7 +265,8 @@ summary.calibmodel <- function(object, newdata=NULL) {
   # Return both summaries
   list(
     model_summary = orig_summary,
-    derivatives_summary = deriv_summary
+    derivatives_summary = deriv_summary,
+    all_derivatives = all_derivatives
   )
 }
 

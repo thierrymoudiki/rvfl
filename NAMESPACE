@@ -1,3 +1,9 @@
+importFrom(stats,
+  approx, coef, density, fitted, median,
+  model.frame, model.matrix, model.response,
+  predict, quantile, residuals, rnorm,
+  runif, sd, t.test, terms
+)
 S3method(coef,calibmodel)
 S3method(coef,rvfl)
 S3method(fitted,calibmodel)
@@ -20,7 +26,6 @@ export(calibmodel.formula)
 export(create_data_partition)
 export(create_new_predictors)
 export(rvfl)
-export(tsrvflf)
 export(select_ridge_lambda)
 export(rvfl.matrix)
 export(rvfl.formula)
@@ -32,3 +37,16 @@ export(plot.rvfl)
 export(residuals.rvfl)
 export(fitted.rvfl)
 export(print.summary.rvfl)
+importFrom(stats, simulate)
+export(krvfl)
+S3method(predict,krvfl)
+S3method(summary,krvfl)
+S3method(print,krvfl)
+
+export(rvfl2)
+export(dropout_layer)
+S3method(predict,rvfl2)
+S3method(summary,rvfl2)
+S3method(residuals,rvfl2)
+S3method(fitted,rvfl2)
+

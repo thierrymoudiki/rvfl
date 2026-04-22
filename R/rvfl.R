@@ -61,14 +61,14 @@ predict.rvfl <- function(object, newdata,
   if (!is.matrix(newdata) && !is.data.frame(newdata)) {
     newdata <- as.matrix(newdata)
   }  
-  misc::debug_print(newdata)
+  #misc::debug_print(newdata)
   # Create hidden features with error checking
   #tryCatch({
   new_predictors <- create_new_predictors(newdata, 
                                           nb_hidden = object$n_hidden_features,
                                           nodes_sim = object$nodes_sim,
                                           activ = object$activ)    
-  misc::debug_print(new_predictors)                                      
+  #misc::debug_print(new_predictors)                                      
   # Validate the created features
   if (any(is.na(new_predictors$predictors))) {
     stop("Hidden features contain NA/NaN values")
@@ -131,7 +131,8 @@ summary.rvfl <- function(object, newdata) {
   eps_factor <- zero ** (1 / 3)
   n_vars <- ncol(newdata)
   derivatives <- matrix(0, nrow = nrow(newdata), ncol = n_vars)
-  colnames(derivatives) <- colnames(newdata)
+  if (!is.null(colnames(newdata)))
+    colnames(derivatives) <- colnames(newdata)
   
   for (j in 1:n_vars) {
     newdata_plus <- newdata_minus <- newdata
@@ -139,16 +140,14 @@ summary.rvfl <- function(object, newdata) {
     cond <- abs(value_x) > zero
     h <- ifelse(cond, eps_factor * abs(value_x), zero)
     newdata_plus[, j] <- newdata_plus[, j] + h
-    newdata_minus[, j] <- newdata_minus[, j] - h
-    
+    newdata_minus[, j] <- newdata_minus[, j] - h    
     # Get predictions for perturbed inputs
     pred_plus <- predict(object, newdata_plus)
-    pred_minus <- predict(object, newdata_minus)
-    
+    pred_minus <- predict(object, newdata_minus)    
     # Calculate centered difference
     derivatives[, j] <- (pred_plus - pred_minus) / (2 * h)
   }
-  
+  all_derivatives <- derivatives
   # Derivative statistics with confidence intervals and significance codes
   derivative_stats <- data.frame(
     #Variable = colnames(derivatives),
@@ -179,8 +178,7 @@ summary.rvfl <- function(object, newdata) {
       # Extract t-test results for non-constant data
       derivative_stats$CI_Lower[j] <- t_test_result$conf.int[1]
       derivative_stats$CI_Upper[j] <- t_test_result$conf.int[2]
-      derivative_stats$P_Value[j] <- t_test_result$p.value
-      
+      derivative_stats$P_Value[j] <- t_test_result$p.value      
       # Assign significance codes
       if (!is.na(t_test_result$p.value)) {
         if (t_test_result$p.value < 0.001) {
@@ -198,6 +196,7 @@ summary.rvfl <- function(object, newdata) {
     }
   }
   
+  rvfl_summary$all_derivatives <- all_derivatives
   # Add derivative statistics to the summary
   rvfl_summary$derivative_stats <- derivative_stats
   
