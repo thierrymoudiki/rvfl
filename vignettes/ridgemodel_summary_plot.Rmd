@@ -96,7 +96,7 @@ print(confint(lm_model))
 start <- proc.time()[3]
 ridge_model <- rvfl::calibmodel(lambda=10**seq(-10, 10, length.out=100), x = as.matrix(train_data[,-7]), y = train_data$Employed)
 print(proc.time()[3] - start)
-print(summary(ridge_model))
+# print(summary(ridge_model))
 print(plot(ridge_model))
 ```
 
